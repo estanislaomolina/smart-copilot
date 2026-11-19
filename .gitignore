@@ -1,0 +1,33 @@
+# Material de la empresa: uso local, fuera del historial.
+/dataset_challenge_soflex.csv
+/SOFLEX_TECHNICAL_CHALLENGE_AI_ENGINEER.pdf
+/data/private/
+
+# Configuración y credenciales.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Datos de ejecución y trazas.
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/logs/
+/artifacts/
+
+# Dependencias y archivos generados.
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+node_modules/
+dist/
+coverage/
+.DS_Store
