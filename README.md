@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Auditoría, contratos y extracción mock parcial de ubicación y categoría disponibles. Prioridad, riesgos, protocolos, panel y persistencia siguen pendientes.
+Auditoría, contratos y mock parcial de ubicación, categoría, riesgos y prioridad disponibles. Protocolos, panel y persistencia siguen pendientes.
 
 ## Objetivo
 
@@ -22,7 +22,7 @@ Requiere Docker con Compose:
 docker compose up --build
 ```
 
-El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas deterministas de ubicación y categoría. Todavía no incluye el panel.
+El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas deterministas de ubicación, categoría, riesgos y prioridad sugerida. Todavía no incluye el panel.
 
 No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
 
@@ -36,7 +36,7 @@ curl http://localhost:8000/api/analyze \
   -d '{"transcript":"Llamante: En Av. Corrientes 1540 hay fuego."}'
 ```
 
-La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas no pueden resolver quedan desconocidos. Es un mock parcial: no asigna prioridad, riesgos ni protocolos. Ver [alcance y límites](docs/mock-analysis.md).
+La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas no pueden resolver quedan desconocidos. Es un mock parcial: sugiere riesgos y prioridad cuando hay reglas aplicables, sin asignar prioridad por defecto. No busca reproducir todas las etiquetas del CSV. Ver [reglas y límites](docs/mock-priority-risks.md).
 
 ## Pruebas del mock y la API
 
