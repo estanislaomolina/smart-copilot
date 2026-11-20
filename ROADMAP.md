@@ -51,9 +51,11 @@ Primer incremento — `feat/mock-analysis`:
 - [x] Extraer ubicación y sugerir categoría con reglas deterministas, evidencia y datos desconocidos explícitos.
 - [x] Agregar tests de valores esperados revisados del CSV y errores de la API.
 - [x] Agregar riesgos y prioridad de simulación con cobertura parcial; no se amplían reglas para perseguir 30/30.
-- [ ] Incorporar catálogo, selección de protocolos y estado de preguntas.
+- [x] Incorporar catálogo de demostración y selección por subtipo o por el operador.
+- [x] Implementar checklist inicial con evidencia para diálogo explícito y conservación de respuestas manuales compatibles.
+- [ ] Completar la interpretación de respuestas implícitas en relato libre, con revisión humana.
 
-Riesgos y prioridad en [mock-priority-risks.md](docs/mock-priority-risks.md). Protocolos y recorrido completo siguen pendientes. El Hito 2 sigue abierto hasta completar el recorrido del operador.
+Incremento actual: `feat/protocol-engine`. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
 
 - [ ] Cargar ejemplos y texto libre.
 - [ ] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
@@ -66,9 +68,9 @@ Aceptación: con `docker compose up --build`, sin claves ni servicios externos d
 
 ## Hito 3 — LLM y controles de incertidumbre
 
-Rama sugerida: `feat/llm-provider`.
+Se retoma con Haiku después de completar el Hito 2.
 
-- [ ] Integrar un proveedor real con configuración por entorno.
+- [ ] Integrar Haiku como proveedor real con configuración por entorno.
 - [ ] Validar salida estructurada y fragmentos de evidencia.
 - [ ] Separar afirmaciones del relato de inferencias.
 - [ ] Aplicar tiempos de espera y reintentos acotados donde corresponda.
@@ -108,6 +110,6 @@ Aceptación: el evaluador puede clonar el repo, ejecutar el único comando reque
 
 ## Prioridad y presupuesto
 
-Primero se completa el flujo obligatorio en mock; luego se integra el LLM y se evalúa. Las 72 horas son corridas desde la recepción: se reservan las últimas seis para documentación, video y contingencias, ajustando el alcance al tiempo real disponible.
+Primero se completa el flujo obligatorio en mock con catálogo y revisión humana; luego se integra Haiku y se evalúa. Las 72 horas son corridas desde la recepción: se reservan las últimas seis para documentación, video y contingencias, ajustando el alcance al tiempo real disponible.
 
 Mapas, audio, geocodificación externa, múltiples proveedores reales y otros extras se consideran solo después de completar los hitos obligatorios.
