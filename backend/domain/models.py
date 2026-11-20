@@ -188,7 +188,6 @@ class ErrorResponse(Contract):
     code: Literal[
         "invalid_input", "provider_unavailable", "provider_timeout",
         "invalid_provider_output", "unsupported_provider",
-        "protocol_not_found", "protocol_category_mismatch",
     ]
     message: NonBlank
     retryable: bool = False

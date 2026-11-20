@@ -28,25 +28,6 @@ class AnalysisApiTests(unittest.TestCase):
         self.assertEqual(result["data"]["category"]["value"], "INCENDIO_RESCATE")
         self.assertIsNone(result["data"]["priority"]["value"])
 
-    def test_csv_call_returns_risks_and_priority_through_http(self):
-        import csv
-        from pathlib import Path
-
-        path = Path(__file__).resolve().parents[1] / "data/raw/dataset_challenge_soflex.csv"
-        with path.open(encoding="utf-8-sig", newline="") as handle:
-            text = next(csv.DictReader(handle))["transcripcion_cruda"]
-        response = self.client.post("/api/analyze", json={"transcript": text})
-        self.assertEqual(response.status_code, 200)
-        result = response.json()
-        self.assertEqual(result["model"], "rules-v2")
-        self.assertEqual(result["data"]["priority"]["value"], "P1")
-        self.assertIn("P-FIRE-TRAPPED", result["data"]["priority"]["rationale"])
-        self.assertTrue(result["data"]["risks"])
-        for field in [*result["data"]["risks"], result["data"]["priority"]]:
-            self.assertEqual(field["origin"], "inference")
-            for span in field["evidence"]:
-                self.assertEqual(text[span["start"]:span["end"]], span["text"])
-
     def test_invalid_inputs_are_rejected_without_echoing_the_input(self):
         payloads = [
             {}, {"transcript": ""}, {"transcript": "   "},

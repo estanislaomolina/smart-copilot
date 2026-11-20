@@ -1,7 +1,5 @@
 # Extracción mock inicial
 
-Este documento registra el primer incremento. Ver las ampliaciones de [riesgos/prioridad](mock-priority-risks.md) y [catálogo/checklist](protocol-engine.md).
-
 Este incremento agrega `POST /api/analyze` con extracción parcial de ubicación y sugerencia de categoría. El proveedor aplica reglas sobre la transcripción; no lee el CSV ni devuelve una fila por ID. Funciona sin credenciales ni servicios externos.
 
 ## Uso
@@ -57,4 +55,4 @@ Verificación realizada: 18 tests pasan, incluyendo los subcasos de valores revi
 
 Son pruebas de desarrollo y regresión sobre material conocido, no una evaluación independiente. Los ocho casos de `data/synthetic/development.json` siguen apartados y no se usan. Los valores esperados nuevos se revisarán con el usuario; no se añaden etiquetas clínicas ni prioridades.
 
-La ampliación de riesgos y prioridad se documenta por separado. El catálogo de protocolos, panel y persistencia siguen pendientes; el Hito 2 continúa abierto.
+El siguiente incremento deberá cubrir prioridad/riesgos y catálogo de protocolos antes de completar el panel y la persistencia. El Hito 2 continúa abierto.

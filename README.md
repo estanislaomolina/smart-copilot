@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay catálogo y checklist inicial; panel, persistencia y derivación siguen pendientes. La integración LLM con Haiku se hará después de completar ese flujo.
+Auditoría, contratos y extracción mock parcial de ubicación y categoría disponibles. Prioridad, riesgos, protocolos, panel y persistencia siguen pendientes.
 
 ## Objetivo
 
@@ -22,7 +22,7 @@ Requiere Docker con Compose:
 docker compose up --build
 ```
 
-El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas de demostración. El catálogo y checklist se aplican por separado. Todavía no incluye el panel.
+El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas deterministas de ubicación y categoría. Todavía no incluye el panel.
 
 No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
 
@@ -36,17 +36,7 @@ curl http://localhost:8000/api/analyze \
   -d '{"transcript":"Llamante: En Av. Corrientes 1540 hay fuego."}'
 ```
 
-La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas no pueden resolver quedan desconocidos. El mock mantiene cobertura parcial de ubicación, categoría, riesgos y prioridad, sin buscar reproducir todas las etiquetas del CSV. Ver [reglas de simulación](docs/mock-priority-risks.md). Las preguntas e instrucciones provienen del motor de protocolos separado.
-
-## Catálogo y checklist
-
-- `GET /api/protocols?category=INCENDIO_RESCATE` lista candidatos.
-- `POST /api/protocols/apply` recibe `request`, `data` y un `protocol_id` opcional.
-- La categoría sola deja la selección pendiente; no se copian respuestas del CSV.
-- El checklist conserva evidencia y revisión manual compatible. La interpretación inicial se limita a diálogo explícito; respuestas implícitas en relato libre quedan pendientes.
-- Las instrucciones del catálogo conservan fuente y estado `demo_unverified`.
-
-Ver [API, ejemplos y límites](docs/protocol-engine.md). Para regenerar el catálogo: `python3 scripts/build_protocol_catalog.py`.
+La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas no pueden resolver quedan desconocidos. Es un mock parcial: no asigna prioridad, riesgos ni protocolos. Ver [alcance y límites](docs/mock-analysis.md).
 
 ## Pruebas del mock y la API
 

@@ -10,7 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 appuser
 
 COPY backend ./backend
-COPY data/protocols ./data/protocols
 USER appuser
 EXPOSE 8000
 

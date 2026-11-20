@@ -9,15 +9,10 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from backend.domain.models import (
-    AnalysisRequest, AnalysisResult, CallCard, Category, ErrorResponse, HealthResponse,
+    AnalysisRequest, AnalysisResult, CallCard, ErrorResponse, HealthResponse,
 )
 from backend.providers.base import ExtractionProvider, ProviderError
 from backend.providers.mock import MockExtractionProvider
-from backend.protocols.catalog import ProtocolCatalog
-from backend.protocols.engine import ProtocolEngine
-from backend.protocols.models import (
-    ProtocolDefinition, ProtocolError, ProtocolRequest, ProtocolResult, ProtocolSummary,
-)
 
 
 def get_provider() -> ExtractionProvider:
@@ -30,22 +25,9 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="Smart Copilot",
-        version="0.3.0",
-        description="Mock y catálogo de protocolos de demostración. Panel y persistencia pendientes.",
+        version="0.2.0",
+        description="Extracción mock parcial de ubicación y categoría. Panel y persistencia pendientes.",
     )
-
-    catalog = ProtocolCatalog()
-    engine = ProtocolEngine(catalog)
-
-    @app.exception_handler(ProtocolError)
-    async def protocol_error(_request: Request, error: ProtocolError) -> JSONResponse:
-        status, message = {
-            "protocol_not_found": (404, "Protocolo no encontrado."),
-            "protocol_category_mismatch": (409, "El protocolo no corresponde a la categoría; revisar los datos."),
-        }[error.code]
-        return JSONResponse(status_code=status, content=ErrorResponse(
-            code=error.code, message=message,
-        ).model_dump())
 
     @app.exception_handler(RequestValidationError)
     async def invalid_input(_request: Request, _error: RequestValidationError) -> JSONResponse:
@@ -77,8 +59,7 @@ def create_app() -> FastAPI:
     def contracts() -> dict:
         return {
             model.__name__: model.model_json_schema()
-            for model in (AnalysisRequest, AnalysisResult, CallCard, ErrorResponse,
-                          ProtocolRequest, ProtocolResult)
+            for model in (AnalysisRequest, AnalysisResult, CallCard, ErrorResponse)
         }
 
     @app.post("/api/analyze", response_model=AnalysisResult, tags=["analysis"],
@@ -95,21 +76,6 @@ def create_app() -> FastAPI:
             return result
         except (ValidationError, ValueError) as exc:
             raise ProviderError("invalid_provider_output", "Salida inválida.") from exc
-
-    @app.get("/api/protocols", response_model=list[ProtocolSummary], tags=["protocols"])
-    def list_protocols(category: Category | None = None) -> list[ProtocolSummary]:
-        return catalog.summaries(category)
-
-    @app.get("/api/protocols/{protocol_id}", response_model=ProtocolDefinition, tags=["protocols"],
-             responses={404: {"model": ErrorResponse}})
-    def get_protocol(protocol_id: str) -> ProtocolDefinition:
-        return catalog.get(protocol_id)
-
-    @app.post("/api/protocols/apply", response_model=ProtocolResult, tags=["protocols"],
-              responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse},
-                         422: {"model": ErrorResponse}})
-    def apply_protocol(request: ProtocolRequest) -> ProtocolResult:
-        return engine.apply(request)
 
     return app
 
