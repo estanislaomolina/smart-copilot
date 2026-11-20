@@ -1,6 +1,6 @@
 # Contratos iniciales y servicio mínimo
 
-Este incremento define la estructura de intercambio de datos y permite arrancar la API con Docker Compose. El análisis, el panel, la persistencia y las transiciones de la carta se implementarán en el próximo hito.
+Este documento registra la base técnica entregada en el Hito 1: contratos y arranque con Docker Compose. El estado actual de la extracción se documenta en [mock-analysis.md](mock-analysis.md); panel, persistencia y transiciones siguen pendientes.
 
 ## Datos y evidencia
 
@@ -43,13 +43,13 @@ Las instrucciones de prearribo se modelan aparte con ID, protocolo, versión, fu
 
 ## Proveedores y revisión humana
 
-`ExtractionProvider` define una operación asíncrona `analyze(AnalysisRequest) -> AnalysisResult`. Todavía no hay implementación mock ni real. El resultado identifica proveedor, modelo opcional y advertencias, y no permite atribuir datos al operador.
+`ExtractionProvider` define una operación asíncrona `analyze(AnalysisRequest) -> AnalysisResult`. En el Hito 1 no había implementación mock ni real; el mock parcial se agrega en el Hito 2. El resultado identifica proveedor, modelo opcional y advertencias, y no permite atribuir datos al operador.
 
 `CallCard` permite datos de procedencia humana, tiene ID, revisión numérica y estados `draft`, `reviewed` y `referred`. Las fechas tienen zona horaria, orden coherente y deben corresponder al estado.
 
 Estos modelos validan snapshots; no implementan persistencia, control de acceso ni transiciones. La aplicación deberá gestionar las revisiones y conservar las correcciones al reanalizar. No se exige completar todas las preguntas para representar una carta revisada: la política de derivación se definirá en el flujo del operador.
 
-Los códigos previstos para errores distinguen entrada inválida, proveedor no disponible, timeout, salida inválida y configuración no soportada. La traducción de fallos de extracción a HTTP se incorporará con los proveedores.
+Los códigos previstos para errores distinguen entrada inválida, proveedor no disponible, timeout, salida inválida y configuración no soportada. La traducción de fallos de extracción a HTTP se agrega con el proveedor mock en el Hito 2.
 
 ## Ejecución
 

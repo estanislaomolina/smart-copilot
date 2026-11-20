@@ -45,6 +45,16 @@ Aceptación técnica verificada: el servicio se construye y arranca con Docker C
 
 Ramas sugeridas: `feat/mock-analysis` y `feat/operator-workflow`, como incrementos sucesivos.
 
+Primer incremento — `feat/mock-analysis`:
+
+- [x] Implementar `POST /api/analyze` para recibir texto libre.
+- [x] Extraer ubicación y sugerir categoría con reglas deterministas, evidencia y datos desconocidos explícitos.
+- [x] Agregar tests de valores esperados revisados del CSV y errores de la API.
+- [ ] Agregar prioridad y riesgos con reglas justificadas.
+- [ ] Incorporar catálogo, selección de protocolos y estado de preguntas.
+
+Alcance parcial y verificaciones en [mock-analysis.md](docs/mock-analysis.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
+
 - [ ] Cargar ejemplos y texto libre.
 - [ ] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
 - [ ] Mostrar datos, evidencia, preguntas e instrucciones en el panel.

@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Auditoría de datos, contratos y API mínima disponibles. El análisis, el panel y la persistencia todavía no están implementados.
+Auditoría, contratos y extracción mock parcial de ubicación y categoría disponibles. Prioridad, riesgos, protocolos, panel y persistencia siguen pendientes.
 
 ## Objetivo
 
@@ -22,11 +22,32 @@ Requiere Docker con Compose:
 docker compose up --build
 ```
 
-El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). Este incremento levanta la base del backend; todavía no procesa llamadas ni incluye el panel.
+El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas deterministas de ubicación y categoría. Todavía no incluye el panel.
 
-No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único modo admitido por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
+No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
 
 Para detenerlo: `docker compose down`. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
+
+## Analizar una transcripción
+
+```bash
+curl http://localhost:8000/api/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"transcript":"Llamante: En Av. Corrientes 1540 hay fuego."}'
+```
+
+La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas no pueden resolver quedan desconocidos. Es un mock parcial: no asigna prioridad, riesgos ni protocolos. Ver [alcance y límites](docs/mock-analysis.md).
+
+## Pruebas del mock y la API
+
+En un entorno virtual de Python 3.12:
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m unittest discover -s tests -v
+```
+
+Se comparan valores esperados revisados del CSV y variaciones de sus relatos. Son pruebas de desarrollo, no una evaluación independiente de generalización.
 
 ## Exploración de datos
 
