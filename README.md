@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay catálogo y checklist inicial; panel, persistencia y derivación siguen pendientes. La integración LLM con Haiku se hará después de completar ese flujo.
+Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay panel para analizar texto, inspeccionar evidencia, corregir categoría/prioridad y seleccionar protocolos. El checklist es de consulta; completar respuestas, editar ubicación, persistir y derivar siguen pendientes. La integración LLM con Haiku se hará después de completar ese flujo.
 
 ## Objetivo
 
@@ -14,7 +14,7 @@ El operador carga una transcripción, revisa ubicación, tipología y prioridad 
 
 Ver [ROADMAP.md](ROADMAP.md) para hitos, criterios de aceptación y flujo de ramas y pull requests.
 
-## Ejecutar la API
+## Ejecutar el panel y la API
 
 Requiere Docker con Compose:
 
@@ -22,11 +22,24 @@ Requiere Docker con Compose:
 docker compose up --build
 ```
 
-El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas de demostración. El catálogo y checklist se aplican por separado. Todavía no incluye el panel.
+El panel queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas de demostración. El catálogo y checklist se aplican por separado. El panel consume ambos endpoints sin enviar transcripciones a terceros.
 
 No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
 
 Para detenerlo: `docker compose down`. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
+
+## Primer recorrido del operador
+
+1. Pegar una transcripción y presionar **Enter** para analizar. **Shift+Enter** agrega una línea. También se puede usar **Analizar llamada**.
+2. En **Revisar datos**, comprobar ubicación, categoría y prioridad; corregir los selectores o usar **Confirmar sugerencias** para aceptar los valores disponibles.
+3. En **Guiar la llamada**, elegir directamente el tipo de incidente entre las opciones visibles cuando el análisis no lo resuelva. Esa elección carga las preguntas pendientes y las indicaciones del catálogo. No se selecciona un protocolo por defecto cuando hay varios candidatos. Las preguntas respondidas se agrupan aparte.
+4. **Nueva llamada** limpia la pantalla y enfoca el campo de texto en un solo paso. **Volver a la llamada anterior** permite recuperar el último borrador hasta que se analice otra llamada.
+
+En escritorio, transcripción, datos y guía se muestran en tres columnas dentro de la altura disponible. Los paneles de datos y guía permiten desplazamiento propio cuando el contenido lo requiere; evidencia, fuentes y explicaciones se despliegan a demanda. En pantallas angostas los bloques se reorganizan para mantener el texto legible.
+
+El texto original queda fijo tras analizarlo para conservar los offsets de evidencia. No hay acción de reanálisis sobre el mismo texto. Cambiar categoría o tipo de incidente actualiza las preguntas sin volver a ejecutar el extractor. Por ahora todo vive en memoria: recargar pierde el trabajo. No hay guardado, edición del checklist ni derivación. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
+
+Para desarrollar el panel: Node 24 y `cd frontend && npm ci && npm run dev`, con la API en el puerto 8000 (`uvicorn backend.main:app --reload`). Vite usa un proxy local para `/api`. `cd frontend && npm run build` verifica TypeScript y genera el build; FastAPI sirve ese build en Docker, sin proceso Node durante la ejecución. React/React DOM implementan la interfaz; TypeScript valida tipos y Vite compila los assets. Las versiones resueltas están en el lockfile.
 
 ## Analizar una transcripción
 
@@ -56,6 +69,8 @@ En un entorno virtual de Python 3.12:
 python3 -m pip install -r requirements-dev.txt
 python3 -m unittest discover -s tests -v
 ```
+
+Verificación del primer panel: build de TypeScript/Vite, 43 tests del backend y arranque saludable con Docker Compose. Se comprobó en Chromium el análisis, la selección de protocolo, la carga con Enter y el salto de línea con Shift+Enter, la recuperación de la llamada anterior con sus correcciones, el cambio de categoría, la vista móvil y la conservación de datos frente a una petición fallida. No equivale a validación operativa ni evaluación independiente.
 
 Se comparan valores esperados revisados del CSV y variaciones de sus relatos. Son pruebas de desarrollo, no una evaluación independiente de generalización.
 
@@ -118,7 +133,7 @@ Se reportarán exactitud de ubicación y categoría, confusiones de prioridad, p
 - Arranca con `docker compose up --build` y permite usar el panel sin claves.
 - Procesa texto nuevo y ejemplos modificados; el mock no devuelve una fila por su ID.
 - Representa datos desconocidos sin inventar hechos.
-- Permite inspeccionar evidencia, corregir campos y conservar las correcciones al reanalizar.
+- Permite inspeccionar evidencia, corregir campos y conservar las correcciones al actualizar el tipo de incidente.
 - Permite completar preguntas y derivar una carta persistida tras recargar.
 - Informa fallos del LLM y permite continuar la carga manual.
 - El repositorio y la imagen excluyen secretos, datos privados de ejecución y el PDF original.
