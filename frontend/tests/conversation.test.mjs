@@ -44,6 +44,22 @@ test('conserva decisiones humanas, incluidas opciones dejadas sin determinar, y 
   assert.equal(old.questions[0].answer, 'No.');
 });
 
+test('conserva cada campo de ubicación revisado y el vaciado explícito ante una nueva extracción', () => {
+  for (const key of Object.keys(incident().location)) {
+    const old = incident(), fresh = incident();
+    old.location[key] = manual('Valor revisado');
+    fresh.location[key] = { value: 'Nueva sugerencia', origin: 'inference', evidence: [], rationale: 'Simulación' };
+    const reviewed = mergeReviewedData(fresh, old, [`location.${key}`]);
+    assert.deepEqual(reviewed.data.location[key], old.location[key]);
+    assert.equal(reviewed.notices.length, 1);
+    old.location[key] = unknown();
+    const cleared = mergeReviewedData(fresh, old, [`location.${key}`]);
+    assert.equal(cleared.data.location[key].value, null);
+    assert.equal(cleared.notices.length, 1);
+    assert.equal(mergeReviewedData(fresh, old, []).data.location[key].value, 'Nueva sugerencia');
+  }
+});
+
 test('mantiene solo la elección explícita compatible de protocolo', () => {
   const data = incident(); data.category = manual('INCENDIO_RESCATE');
   const protocol = { selection: 'selected', protocol: { id: 'p', category: 'INCENDIO_RESCATE' } };

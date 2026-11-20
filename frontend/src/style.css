@@ -358,3 +358,63 @@ textarea, select { padding-top: .4rem; padding-bottom: .4rem; }
 
 .question-tracking .text-action { padding: 0 .2rem; font-size: .75rem; line-height: 1.4; margin-left: auto; }
 .question > p { margin: .25rem 0; font-size: .875rem; }
+
+
+/* La carta se revisa sin desplazar las tres columnas de atención. */
+dialog { color: #183044; border: 1px solid #bdcbd6; border-radius: 10px; padding: 0;
+  width: min(900px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); }
+dialog::backdrop { background: #102b3db3; }
+.card-dialog-heading { position: sticky; top: 0; background: #f4f8fa; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .8rem 1rem; border-bottom: 1px solid #d0dce5; }
+.card-content { padding: .7rem 1rem 0; }
+.card-content h3 { margin-top: .8rem; }
+.card-content textarea { min-height: 80px; resize: vertical; margin-bottom: .5rem; }
+.card-facts { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: .75rem; }
+.card-facts > div { background: #f4f8fa; border-radius: 5px; padding: .6rem; }
+.card-facts span, .card-facts strong, .card-facts small { display: block; }
+.card-facts span, .card-facts small, .card-location small { color: #526978; font-size: .8rem; }
+.card-location { display: grid; grid-template-columns: 1fr 1fr; margin: .4rem 0; gap: .35rem 1rem; }
+.card-location > div { display: flex; gap: .5rem; }
+.card-location dt { color: #526978; min-width: 72px; }
+.card-location dd { margin: 0; overflow-wrap: anywhere; }
+.card-content pre { white-space: pre-wrap; font: inherit; background: #f4f8fa; padding: .7rem; }
+.review-ack { display: flex; gap: .5rem; align-items: start; padding: .75rem 0; font-weight: 450; }
+.review-ack input { flex-shrink: 0; margin-top: .2rem; }
+.card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem;
+  position: sticky; bottom: 0; background: white; padding: .8rem 0; border-top: 1px solid #d0dce5; }
+.card-actions .primary { width: auto; }
+.referral-receipt { padding: .7rem; border: 1px solid #b4d8c5; border-radius: 6px; background: #e8f4ee; overflow-wrap: anywhere; }
+.recovery-dialog > p, .call-list { margin: .8rem 1rem; }
+.call-list { padding: 0; list-style: none; }
+.call-list button { width: 100%; text-align: left; margin-bottom: .5rem; }
+.call-list span, .call-list small { display: block; font-weight: 450; }
+.save-error { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin: 0; }
+.header-actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 720px) {
+  .header-actions { justify-content: flex-start; gap: .35rem; }
+  .header-actions .badge { width: 100%; }
+  .card-facts, .card-location { grid-template-columns: 1fr; }
+  .card-actions { justify-content: stretch; }
+  .card-actions button { flex: 1; }
+}
+
+/* Edición a demanda: la confirmación aparece solo al revisar un campo. */
+.location-review { border-bottom: 1px solid #edf1f5; padding: .3rem 0; }
+.location-review-row { display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap; }
+.location-review-row > strong { flex: 1; min-width: 70px; overflow-wrap: anywhere; font-size: .875rem; }
+.location-review .origin { font-size: .75rem; }
+.location-actions { display: flex; gap: .15rem; }
+.location-actions button { font-size: .75rem; padding: .15rem .3rem; }
+.location-editor { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .4rem 0; }
+.location-editor input { font: inherit; padding: .35rem .5rem; border: 1px solid #aebfcd; border-radius: 5px; min-width: 100px; flex: 1; width: 0; }
+.location-editor input:focus-visible { outline: 3px solid #3496e0; }
+.location-editor small { width: 100%; color: #526978; }
+.location-review-row > .evidence { flex: 0 0 auto; margin: 0; }
+.location-review-row > .evidence[open] { flex-basis: 100%; order: 1; }
+
+.review-field-label { display: block; font-size: .875rem; font-weight: 600; margin-bottom: .2rem; }
+.review-field-value { display: flex; align-items: baseline; justify-content: space-between; gap: .3rem; min-height: 32px; }
+.review-field-value strong { font-size: .9rem; font-weight: 550; overflow-wrap: anywhere; }
+.review-field-value .text-action { padding: .15rem .3rem; font-size: .75rem; }
+.review-field-editor .editor-actions { flex-wrap: wrap; gap: .15rem; }

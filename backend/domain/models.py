@@ -200,6 +200,7 @@ class ErrorResponse(Contract):
         "invalid_input", "provider_unavailable", "provider_timeout",
         "invalid_provider_output", "unsupported_provider",
         "protocol_not_found", "protocol_category_mismatch",
+        "call_not_found", "revision_conflict", "review_required", "invalid_call",
     ]
     message: NonBlank
     retryable: bool = False

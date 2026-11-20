@@ -54,38 +54,39 @@ Primer incremento — `feat/mock-analysis`:
 - [x] Incorporar catálogo de demostración y selección por subtipo o por el operador.
 - [x] Implementar checklist inicial con evidencia para diálogo explícito y conservación de respuestas manuales compatibles.
 - [x] Separar la evaluación contextual del checklist y cubrir de forma conservadora presencia/atrapamiento con evidencia y aclaración versionada.
-- [ ] Ampliar la comprensión semántica de otras preguntas y paráfrasis con Haiku, conservando revisión humana.
 
-Incremento actual: `feat/progressive-conversation`, conversación ampliable sobre el panel de `feat/operator-panel`. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
+Incremento actual: `feat/call-card-persistence`, carta y SQLite sobre la conversación progresiva. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El recorrido principal del operador está implementado y verificado en mock. Queda pendiente la carga de ejemplos desde el panel; por eso no se declara completo todo el checklist del hito. Este pendiente de interfaz no impide comenzar el Hito 3. Las limitaciones semánticas del mock se mantienen explícitas.
 
-- [ ] Cargar ejemplos y texto libre.
+- [x] Cargar texto libre y ejemplos pegados manualmente.
+- [ ] Incorporar carga directa de ejemplos desde el panel.
 - [x] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
 - [x] Mostrar datos, evidencia, preguntas e instrucciones en el panel.
 - [x] Cargar texto libre con Enter, confirmar/corregir categoría y prioridad y elegir el tipo de incidente sin menús intermedios.
 - [x] Agregar turnos y actualizar el historial completo, conservando decisiones humanas y protocolo compatible; mostrar discrepancias y preservar el trabajo ante errores.
 - [x] Guía de atención: instrucciones del catálogo, próxima pregunta utilizable y checklist completo con revisión manual de estados.
 - [x] Iniciar una guía general explícita por categoría conocida, sin bloquear por subtipo ni elegir arbitrariamente un protocolo específico.
-- [ ] Confirmar y corregir campos individualmente, incluida ubicación.
-- [ ] Permitir correcciones, respuestas y revisión de la carta.
-- [ ] Persistir carta y revisiones en SQLite.
-- [ ] Derivar al CAD simulado con confirmación e identificador visibles.
+- [x] Confirmar y corregir categoría, prioridad y cada campo de ubicación individualmente; conservar valores revisados y vaciados explícitos al actualizar y recuperar la llamada. Edición a demanda, sin confirmaciones permanentes ni obligación de revisar cada campo.
+- [x] Permitir respuestas y revisión explícita de la carta, con resumen y observaciones editables.
+- [x] Persistir carta, atención y revisiones en SQLite, con recuperación al recargar y control de versión.
+- [x] Derivar al CAD simulado tras revisión, con fecha e identificador visibles y reintentos idempotentes.
 
 Aceptación: con `docker compose up --build`, sin claves ni servicios externos durante el uso, se completa el recorrido. Modificar la dirección de un ejemplo cambia el resultado; la carta persiste tras recargar y las correcciones humanas se conservan al actualizar la guía del incidente.
 
 ### Próximos incrementos revisables
 
 1. Conversación progresiva: turnos, combinación con decisiones manuales y actualización del checklist (implementado; mantiene las limitaciones semánticas del mock).
-2. Guía y checklist: instrucciones, siguiente pregunta y revisión manual de estados implementadas; confirmaciones individuales de campos todavía pendientes.
-3. Carta de Llamada y SQLite: guardar conversación, revisiones, selección de protocolo y decisiones humanas; revisión explícita y derivación simulada. Prioridad sobre mejoras visuales secundarias.
+2. Guía y checklist: instrucciones, siguiente pregunta y revisión manual de estados implementadas; confirmaciones individuales de categoría, prioridad y ubicación implementadas.
+3. Carta de Llamada y SQLite: guardar conversación, revisiones, selección de protocolo y decisiones humanas; revisión explícita y derivación simulada. Implementado, incluida revisión individual de categoría, prioridad y ubicación.
 4. Evidencia resaltada en el texto y sugerencia de protocolo confirmable cuando haya evidencia suficiente; nunca elegir el primero por defecto.
 5. Haiku sobre los mismos contratos y el mismo frontend, con proveedor activo visible.
 6. Verificación integral, documentación y preparación de entrega.
 
 ## Hito 3 — LLM y controles de incertidumbre
 
-Se retoma con Haiku después de completar el Hito 2.
+Se retoma con Haiku después de integrar los PRs del recorrido mock. La carga directa de ejemplos del Hito 2 permanece registrada como pendiente de interfaz.
 
 - [ ] Integrar Haiku como proveedor real con configuración por entorno.
+- [ ] Ampliar la comprensión semántica de preguntas y paráfrasis, conservando revisión humana.
 - [ ] Validar salida estructurada y fragmentos de evidencia.
 - [ ] Separar afirmaciones del relato de inferencias.
 - [ ] Aplicar tiempos de espera y reintentos acotados donde corresponda.

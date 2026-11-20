@@ -4,6 +4,9 @@ import { analyze, applyProtocol } from './api';
 import { appendTurns, compatibleProtocolId, mergeReviewedData, nextGuidanceQuestion } from './conversation';
 import type { ManualField } from './conversation';
 import type { Analysis, FieldValue, IncidentData, ProtocolResult, Question } from './types';
+import { useCallPersistence } from './useCallPersistence';
+import { CallCardDialog } from './CallCardDialog';
+import type { CallSnapshot, StoredCall } from './types';
 import './style.css';
 
 const categories = {
@@ -53,17 +56,68 @@ function ReviewField({ name, field, options, disabled, onReview }: {
   name: string; field: FieldValue; options: Record<string, string>; disabled: boolean;
   onReview: (value: string) => void;
 }) {
-  return <div className="review-field"><label htmlFor={name}>{name}</label>
-    <select id={name} value={field.value ?? ''} disabled={disabled} onChange={event => onReview(event.target.value)}>
-      <option value="">{name === 'Prioridad' ? 'Sin dato' : 'Sin determinar'}</option>
-      {Object.entries(options).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-    </select>
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  useEffect(() => { setEditing(false); }, [field]);
+  return <div className="review-field">
+    <span className="review-field-label">{name}</span>
+    {editing ? <form className="review-field-editor" onSubmit={event => {
+      event.preventDefault(); onReview(value); setEditing(false);
+    }}>
+      <select autoFocus id={name} aria-label={name} value={value} disabled={disabled}
+        onChange={event => setValue(event.target.value)}>
+        <option value="">Sin determinar</option>
+        {Object.entries(options).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+      </select>
+      <div className="editor-actions">
+        <button className="confirm-action" disabled={disabled}>
+          {value && value === field.value ? 'Confirmar' : 'Guardar'}</button>
+        <button className="text-action" type="button" disabled={disabled}
+          onClick={() => setEditing(false)}>Cancelar</button>
+      </div>
+    </form> : <div className="review-field-value">
+      <strong>{field.value ? options[field.value] ?? field.value : 'Sin información'}</strong>
+      <button className="text-action" aria-label={'Editar ' + name.toLowerCase()} disabled={disabled}
+        onClick={() => { setValue(field.value ?? ''); setEditing(true); }}>Editar</button>
+    </div>}
     <div className="field-meta">
       <span className={'origin ' + field.origin} title={originLabels[field.origin]}>
-        {{ unknown: 'Sin dato', transcript: 'Extraído', inference: 'Sugerido', operator: 'Confirmado' }[field.origin]}
+        {field.origin === 'operator' ? 'Revisado' : field.value ? 'Sugerido' : 'Sin información'}
       </span>
       <EvidenceView field={field} />
     </div>
+  </div>;
+}
+
+function LocationField({ name, label, field, disabled, onReview }: {
+  name: keyof IncidentData['location']; label: string; field: FieldValue;
+  disabled: boolean; onReview: (value: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  useEffect(() => { setEditing(false); }, [field]);
+  return <div className="location-review" data-location={name}>
+    <div className="location-review-row"><span className="field-label">{label}</span>
+      <strong>{field.value ?? 'Sin información'}</strong>
+      <span className={'origin ' + field.origin}>{field.origin === 'operator' ? 'Revisado'
+        : field.value ? 'Sugerido' : 'Sin información'}</span>
+      <EvidenceView field={field} />
+      {!editing && <div className="location-actions">
+        <button className="text-action" aria-label={'Editar ' + label.toLowerCase()} disabled={disabled}
+          onClick={() => { setValue(field.value ?? ''); setEditing(true); }}>Editar</button>
+      </div>}
+    </div>
+    {editing && <form className="location-editor" onSubmit={event => {
+      event.preventDefault(); onReview(value.trim()); setEditing(false);
+    }}>
+      <label className="sr-only" htmlFor={'location-' + name}>{label}</label>
+      <input autoFocus id={'location-' + name} value={value} disabled={disabled} maxLength={500}
+        placeholder="Sin información" onChange={event => setValue(event.target.value)} />
+      <button className="confirm-action" disabled={disabled}>
+        {value.trim() && value.trim() === field.value ? 'Confirmar' : 'Guardar'}</button>
+      <button className="text-action" type="button" disabled={disabled} onClick={() => setEditing(false)}>Cancelar</button>
+      <small>Vacío: dejar sin información.</small>
+    </form>}
   </div>;
 }
 
@@ -140,12 +194,11 @@ function App() {
   const [manualFields, setManualFields] = useState<ManualField[]>([]);
   const [updateNotices, setUpdateNotices] = useState<string[]>([]);
   const updating = useRef(false);
-  const [previousCall, setPreviousCall] = useState<{
-    transcript: string; analysis: Analysis | null; data: IncidentData | null; protocol: ProtocolResult | null;
-    error: string; protocolError: string; operatorTurn: string; callerTurn: string;
-    manualFields: ManualField[]; updateNotices: string[];
-    preparedQuestion: PreparedQuestion | null; questionUpdate: QuestionUpdate | null;
-  } | null>(null);
+  const [previousCallId, setPreviousCallId] = useState<string | null>(null);
+  const [operatorNotes, setOperatorNotes] = useState('');
+  const [cardOpen, setCardOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const recoveryDialog = useRef<HTMLDialogElement>(null);
   const [changingType, setChangingType] = useState(false);
   const [protocol, setProtocol] = useState<ProtocolResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -171,8 +224,10 @@ function App() {
     setBusy(true); setError('');
     try {
       const result = await analyze(transcript);
-      const next = structuredClone(result.data);
-      setAnalysis(result); setData(next); setProtocol(null); setPreviousCall(null);
+      const merged = data ? mergeReviewedData(result.data, data, manualFields) : null;
+      const next = merged?.data ?? structuredClone(result.data);
+      if (merged) setUpdateNotices(merged.notices);
+      setAnalysis(result); setData(next); setProtocol(null); setPreviousCallId(null);
       await loadProtocols(result, next);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo analizar la transcripción.');
@@ -235,56 +290,63 @@ function App() {
   }
   function review(key: 'category' | 'priority', value: string) {
     if (!data || !analysis) return;
+    const prior = data[key];
     const field: FieldValue = value
-      ? { value, origin: 'operator', evidence: [], rationale: 'Confirmación o corrección manual en el panel.' }
+      ? { ...prior, value, origin: 'operator',
+          evidence: value === prior.value ? prior.evidence : [],
+          rationale: value === prior.value ? 'Dato confirmado individualmente por el operador.'
+            : 'Dato corregido por el operador.' }
       : unknown();
     setManualFields(previous => [...new Set([...previous, key])]);
     const next = { ...data, [key]: field };
-    if (key === 'category') {
+    const categoryChanged = key === 'category' && value !== (prior.value ?? '');
+    if (categoryChanged) {
       next.subcategory = unknown(); next.questions = [];
       setProtocol(null); setChangingType(false);
     }
     setData(next);
-    if (key === 'category') void loadProtocols(analysis, next);
+    if (categoryChanged) void loadProtocols(analysis, next);
   }
-  function confirmSuggestions() {
-    if (!data) return;
-    const next = { ...data };
-    for (const key of ['category', 'priority'] as const) {
-      if (data[key].value && data[key].origin !== 'operator') {
-        next[key] = { value: data[key].value, origin: 'operator', evidence: [],
-          rationale: 'Sugerencia confirmada por el operador en el panel.' };
-      }
-    }
-    setManualFields(previous => [...new Set([...previous,
-      ...(['category', 'priority'] as const).filter(key => next[key].origin === 'operator')])]);
-    setData(next);
+  function reviewLocation(key: keyof IncidentData['location'], value: string) {
+    if (!data || locked) return;
+    const prior = data.location[key];
+    const field: FieldValue = value
+      ? { value, origin: 'operator', evidence: value === prior.value ? prior.evidence : [],
+          rationale: value === prior.value ? 'Dato confirmado individualmente por el operador.'
+            : 'Dato corregido por el operador.' }
+      : unknown();
+    setData({ ...data, location: { ...data.location, [key]: field } });
+    setManualFields(previous => [...new Set<ManualField>([...previous, `location.${key}`])]);
   }
-  function newCall() {
-    if (busy || protocolBusy) return;
-    setPreviousCall({ transcript, analysis, data, protocol, error, protocolError, operatorTurn, callerTurn, manualFields, updateNotices, preparedQuestion, questionUpdate });
-    setPreparedQuestion(null); setQuestionUpdate(null);
-    setOperatorTurn(''); setCallerTurn(''); setManualFields([]); setUpdateNotices([]);
-    setTranscript(''); setAnalysis(null); setData(null); setProtocol(null);
+  async function newCall() {
+    if (locked) return;
+    try {
+      const previous = await persistence.beginNew();
+      setPreviousCallId(previous?.card.id ?? null);
+      setPreparedQuestion(null); setQuestionUpdate(null);
+      setOperatorTurn(''); setCallerTurn(''); setManualFields([]); setUpdateNotices([]);
+      setTranscript(''); setAnalysis(null); setData(null); setProtocol(null); setOperatorNotes('');
+      setChangingType(false); setError(''); setProtocolError('');
+      requestAnimationFrame(() => transcriptInput.current?.focus());
+    } catch { /* El error de guardado se muestra sin abandonar la llamada. */ }
+  }
+  async function restoreCall(id: string, discard = false) {
+    try { await persistence.openCall(id, discard); setPreviousCallId(null); setRecoveryOpen(false); }
+    catch { /* Conservar la llamada actual si no se pudo recuperar. */ }
+  }
+  function restore(item: StoredCall) {
+    const context = item.context;
+    setTranscript(item.card.request.transcript); setData(item.card.data);
+    setAnalysis(context.analysis); setProtocol(context.protocol);
+    setManualFields(context.manual_fields); setOperatorTurn(context.operator_turn);
+    setCallerTurn(context.caller_turn); setUpdateNotices(context.update_notices);
+    setQuestionUpdate(context.question_update); setOperatorNotes(item.card.operator_notes);
+    const prepared = context.prepared_question;
+    setPreparedQuestion(prepared ? { ...prepared, protocolId: prepared.protocol_id } : null);
     setChangingType(false); setError(''); setProtocolError('');
-    requestAnimationFrame(() => transcriptInput.current?.focus());
   }
-  function restorePreviousCall() {
-    if (!previousCall || busy || protocolBusy) return;
-    setTranscript(previousCall.transcript); setAnalysis(previousCall.analysis);
-    setData(previousCall.data); setProtocol(previousCall.protocol);
-    setOperatorTurn(previousCall.operatorTurn); setCallerTurn(previousCall.callerTurn);
-    setManualFields(previousCall.manualFields); setUpdateNotices(previousCall.updateNotices);
-    setPreparedQuestion(previousCall.preparedQuestion); setQuestionUpdate(previousCall.questionUpdate);
-    setError(previousCall.error); setProtocolError(previousCall.protocolError);
-    setPreviousCall(null); setChangingType(false);
-    requestAnimationFrame(() => transcriptInput.current?.focus());
-  }
-  const locked = busy || protocolBusy;
   const reviewNotices = [...new Set([...updateNotices, ...(protocol?.review_notices ?? [])])];
 
-  const hasSuggestions = data && [data.category, data.priority].some(field =>
-    field.value && field.origin !== 'operator');
   // Los tres paneles leen el mismo resultado confirmado por la API.
   // Los borradores de edición no reemplazan ese resultado hasta guardar.
   const checklistQuestions = protocol?.questions ?? [];
@@ -297,6 +359,30 @@ function App() {
   const activePrepared = preparedQuestion?.protocolId === protocol?.protocol?.id
     && (preparedQuestion?.stage === 'awaiting_reply' ? !operatorTurn.trim()
       : preparedQuestion?.prompt === operatorTurn) ? preparedQuestion : null;
+  const emptyData: IncidentData = {
+    location: { street: unknown(), number: unknown(), intersection: unknown(), reference: unknown(), district: unknown() },
+    category: unknown(), subcategory: unknown(), priority: unknown(), summary: unknown(), risks: [], questions: [],
+  };
+  const snapshot: CallSnapshot | null = transcript.trim() ? {
+    request: { transcript }, data: { ...(data ?? emptyData), questions: checklistQuestions },
+    operator_notes: operatorNotes,
+    context: { analysis, protocol, manual_fields: manualFields,
+      operator_turn: operatorTurn, caller_turn: callerTurn,
+      prepared_question: activePrepared ? { id: activePrepared.id, protocol_id: activePrepared.protocolId,
+        prompt: activePrepared.prompt, number: activePrepared.number, stage: activePrepared.stage } : null,
+      question_update: questionUpdate, update_notices: updateNotices },
+  } : null;
+  const persistence = useCallPersistence(snapshot, busy || protocolBusy, restore);
+  const locked = busy || protocolBusy || persistence.booting || persistence.working;
+  useEffect(() => {
+    if (recoveryOpen) recoveryDialog.current?.showModal();
+    else recoveryDialog.current?.close();
+  }, [recoveryOpen]);
+  function editSummary(value: string) {
+    setData({ ...(data ?? emptyData), summary: value.trim()
+      ? { value, origin: 'operator', evidence: [], rationale: 'Resumen redactado por el operador.' }
+      : unknown() });
+  }
   const reportedSignals = data?.risks.filter(risk => risk.origin === 'transcript' || risk.origin === 'operator') ?? [];
   const inferredRisks = data?.risks.filter(risk => risk.origin !== 'transcript' && risk.origin !== 'operator') ?? [];
   const clarificationQuestions = checklistQuestions.filter(question => question.status === 'ambiguous');
@@ -309,22 +395,36 @@ function App() {
         <h1>Revisión de llamada</h1>
       </div>
       <div className="header-actions"><span className="badge">Demo · Mock local</span>
-        <button className="secondary" onClick={newCall} disabled={locked || !transcript}>Nueva llamada</button>
+        <button className="secondary" disabled={locked || !transcript.trim()} onClick={() => setCardOpen(true)}>Revisar Carta de Llamada</button>
+        <button className="secondary" disabled={locked} onClick={() => { void persistence.refresh(); setRecoveryOpen(true); }}>Recuperar llamada</button>
+        <button className="secondary" onClick={() => void newCall()} disabled={locked || !transcript}>Nueva llamada</button>
       </div>
     </header>
     <main>
       <div className="notice"><strong>Demo local.</strong> Revisá la prioridad: el mock puede omitir gravedad.
-        <span> Las llamadas todavía no se guardan al recargar.</span>
+        <span role="status"> {persistence.booting ? 'Recuperando llamada…' : persistence.saving ? 'Guardando…'
+          : persistence.dirty ? 'Cambios sin guardar.' : persistence.current ? 'Guardada en SQLite · '
+            + ({ draft: 'Borrador', reviewed: 'Revisada', referred: 'Derivada (simulación)' }[persistence.current.card.status])
+            : 'Lista para una nueva llamada.'}</span>
       </div>
-      {previousCall && <div className="undo-notice" role="status">
+      {previousCallId && <div className="undo-notice" role="status">
         Espacio listo para otra llamada.
-        <button className="text-action" disabled={locked} onClick={restorePreviousCall}>Volver a la llamada anterior</button>
+        <button className="text-action" disabled={locked} onClick={() => void restoreCall(previousCallId)}>Volver a la llamada anterior</button>
       </div>}
+      {persistence.error && <div className="error save-error" role="alert">
+        <span>{persistence.error}</span>
+        {persistence.conflict ? <button className="secondary" disabled={locked}
+          onClick={() => void restoreCall(persistence.callId, true)}>Descartar cambios locales y recuperar guardado</button>
+          : <button className="secondary" disabled={locked || !snapshot}
+            onClick={() => void persistence.saveNow().catch(() => undefined)}>Reintentar guardado</button>}
+      </div>}
+      {persistence.current?.card.status !== 'draft' && persistence.current && persistence.dirty &&
+        <p className="notice">La llamada cambió: vuelve a borrador y requiere una nueva revisión antes de derivar.</p>}
       <div className="workspace" aria-busy={locked}>
         <section className="panel transcript-panel" aria-labelledby="transcript-title">
           <div className="section-title"><h2 id="transcript-title">1. Cargar llamada</h2><span>{analysis ? 'Analizada' : 'Pegar y Enter'}</span></div>
           <label className="sr-only" htmlFor="transcript">Transcripción de la llamada</label>
-          <textarea ref={transcriptInput} autoFocus id="transcript" maxLength={50000} value={transcript} readOnly={!!analysis || busy}
+          <textarea ref={transcriptInput} autoFocus id="transcript" maxLength={50000} value={transcript} readOnly={!!analysis || locked}
             onChange={event => setTranscript(event.target.value)}
             onKeyDown={event => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !event.repeat) {
@@ -383,9 +483,9 @@ function App() {
                 {reviewNotices.map((notice, index) => <p key={index}>{notice}</p>)}
               </div>}
               <div className="review-grid">
-                <ReviewField name="Categoría" field={data.category} options={categories} disabled={locked}
+                <ReviewField name="Categoría" field={data.category} options={categories} disabled={locked || !analysis}
                   onReview={value => review('category', value)} />
-                <ReviewField name="Prioridad" field={data.priority} options={{ P1: 'P1', P2: 'P2', P3: 'P3', P4: 'P4' }} disabled={locked}
+                <ReviewField name="Prioridad" field={data.priority} options={{ P1: 'P1', P2: 'P2', P3: 'P3', P4: 'P4' }} disabled={locked || !analysis}
                   onReview={value => review('priority', value)} />
               </div>
               <p className={'priority-summary ' + (data.priority.origin === 'operator' ? 'priority-confirmed'
@@ -395,19 +495,12 @@ function App() {
                     ? 'Prioridad confirmada por el operador: ' + data.priority.value
                     : 'Prioridad sugerida: ' + data.priority.value}
               </p>
-              <div className="review-action">
-                {hasSuggestions
-                  ? <button className="confirm-action" disabled={locked} onClick={confirmSuggestions}>
-                      Confirmar sugerencias
-                    </button>
-                  : <span className="muted">{[data.category, data.priority].every(field => field.origin === 'operator')
-                      ? 'Categoría y prioridad confirmadas por operador.'
-                      : 'Completá los datos que siguen sin determinar.'}</span>}
-              </div>
               <h3>Ubicación</h3>
               <div className="location-fields">
-                {Object.entries(locationLabels).map(([key, label]) => <FieldView key={key} label={label}
-                  field={data.location[key as keyof typeof locationLabels]} />)}
+                {Object.entries(locationLabels).map(([key, label]) => <LocationField key={key}
+                  name={key as keyof typeof locationLabels} label={label}
+                  field={data.location[key as keyof typeof locationLabels]} disabled={locked}
+                  onReview={value => reviewLocation(key as keyof typeof locationLabels, value)} />)}
               </div>
               {!!reportedSignals.length && <>
                 <div className="subsection-title"><h3>Información reportada</h3><span className="muted">Según el llamante</span></div>
@@ -519,6 +612,23 @@ function App() {
         </section>
       </div>
     </main>
+    <CallCardDialog open={cardOpen} snapshot={snapshot} stored={persistence.current}
+      dirty={persistence.dirty} busy={locked} error={persistence.error}
+      onClose={() => setCardOpen(false)} onSave={persistence.saveNow}
+      onReview={() => persistence.transition('review')} onRefer={() => persistence.transition('refer')}
+      onNotes={setOperatorNotes} onSummary={editSummary} />
+    <dialog className="recovery-dialog" ref={recoveryDialog} onCancel={event => { event.preventDefault(); setRecoveryOpen(false); }}>
+      <div className="card-dialog-heading"><h2>Recuperar llamada</h2>
+        <button className="secondary" disabled={locked} onClick={() => setRecoveryOpen(false)}>Cerrar</button></div>
+      <p className="muted">Últimas 50 llamadas guardadas en este servidor. Al abrir otra, primero se guarda la actual.</p>
+      {persistence.error && <p className="error" role="alert">{persistence.error}</p>}
+      {persistence.recent.length ? <ul className="call-list">{persistence.recent.map(call =>
+        <li key={call.id}><button className="secondary" disabled={locked} onClick={() => void restoreCall(call.id)}>
+          <strong>{categories[call.category as keyof typeof categories] ?? 'Sin categoría'} · {call.priority ?? 'Sin prioridad'}</strong>
+          <span>{new Date(call.updated_at).toLocaleString()} · {{draft: 'Borrador', reviewed: 'Revisada', referred: 'Derivada (simulación)'}[call.status]}</span>
+          <small>{call.id}</small>
+        </button></li>)}</ul> : <p>No hay llamadas guardadas.</p>}
+    </dialog>
   </div>;
 }
 

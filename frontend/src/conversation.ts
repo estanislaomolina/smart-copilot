@@ -1,6 +1,6 @@
-import type { FieldValue, IncidentData, ProtocolResult, Question } from './types';
+import type { ManualField, FieldValue, IncidentData, ProtocolResult, Question } from './types';
 
-export type ManualField = 'category' | 'priority';
+export type { ManualField } from './types';
 
 export function appendTurns(transcript: string, operator: string, caller: string): string {
   const turns = [
@@ -32,7 +32,9 @@ export function mergeReviewedData(
       manualFields.includes(key as ManualField));
   }
   for (const key of Object.keys(data.location) as (keyof IncidentData['location'])[]) {
-    data.location[key] = keep(data.location[key], previous.location[key], 'Ubicación');
+    data.location[key] = keep(data.location[key], previous.location[key],
+      { street: 'Calle', number: 'Altura', intersection: 'Intersección', reference: 'Referencia', district: 'Localidad' }[key],
+      manualFields.includes(`location.${key}`));
   }
   const manualRisks = previous.risks.filter(risk => risk.origin === 'operator');
   data.risks = [...manualRisks, ...data.risks.filter(risk =>
