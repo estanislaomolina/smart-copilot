@@ -195,5 +195,5 @@ class ErrorResponse(Contract):
 
 class HealthResponse(Contract):
     status: Literal["ok"] = "ok"
-    stage: Literal["foundation"] = "foundation"
+    stage: Literal["mock_analysis"] = "mock_analysis"
     configured_provider: Literal["mock"] = "mock"

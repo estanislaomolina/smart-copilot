@@ -1,4 +1,4 @@
-"""Contrato común del mock y del proveedor LLM; todavía sin implementaciones."""
+"""Contrato común del mock y del futuro proveedor LLM."""
 
 from typing import Literal, Protocol
 

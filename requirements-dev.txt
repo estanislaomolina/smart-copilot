@@ -1,0 +1,3 @@
+-r requirements.txt
+# Cliente HTTP para los tests de FastAPI; unittest pertenece a Python.
+httpx==0.27.0
