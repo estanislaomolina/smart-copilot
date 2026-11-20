@@ -26,10 +26,14 @@ Rama: `chore/project-roadmap`.
 - [x] Documentar arquitectura propuesta, roadmap y criterios de aceptación.
 - [x] Integrar el PR inicial de planificación (PR #1).
 
-## Hito 1 — Contratos y servicio ejecutable
+## Hito 1 — Auditoría, contratos y servicio ejecutable
 
-Rama sugerida: `feat/domain-foundation`.
+Ramas: `feat/dataset-audit` para la auditoría inicial y `feat/domain-foundation` para contratos y servicio.
 
+- [x] Auditar estructura, cobertura y posibles inconsistencias sin modificar el contenido del CSV; incluir notebook visual con lógica en scripts Python.
+- [x] Documentar uso de columnas y revisión puntual de etiquetas en [data-audit.md](docs/data-audit.md).
+- [x] Preparar ocho casos sintéticos de desarrollo con evidencia y expectativas explícitas.
+- [ ] Revisar con el usuario las expectativas sintéticas antes de utilizarlas como referencia.
 - [ ] Modelar transcripción, ubicación, evidencia, tipología, prioridad y carta.
 - [ ] Distinguir campos desconocidos, sugerencias y valores confirmados.
 - [ ] Definir preguntas con identificador y estados pendiente, respondida, ambigua y no aplicable.
@@ -69,7 +73,7 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 
 Rama sugerida: `feat/evaluation`.
 
-- [ ] Auditar etiquetas antes de establecer resultados esperados.
+- [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
 - [ ] Definir y versionar la separación entre desarrollo y evaluación.
 - [ ] Añadir casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones.
 - [ ] Evitar que las respuestas o filas completas de evaluación se filtren al prompt o a la recuperación.

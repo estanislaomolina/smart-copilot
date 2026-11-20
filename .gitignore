@@ -30,3 +30,6 @@ node_modules/
 dist/
 coverage/
 .DS_Store
+
+# Archivos temporales de Jupyter.
+.ipynb_checkpoints/

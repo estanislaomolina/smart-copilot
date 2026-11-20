@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Repositorio inicial y plan de trabajo. La aplicación todavía no está implementada. El comando de arranque de la entrega será `docker compose up --build`.
+Planificación y auditoría inicial de datos disponibles. La aplicación todavía no está implementada. El comando de arranque de la entrega será `docker compose up --build`.
 
 ## Objetivo
 
@@ -13,6 +13,27 @@ El operador carga una transcripción, revisa ubicación, tipología y prioridad 
 ## Roadmap y forma de trabajo
 
 Ver [ROADMAP.md](ROADMAP.md) para hitos, criterios de aceptación y flujo de ramas y pull requests.
+
+## Exploración de datos
+
+Con Python 3.10 o superior, sin instalar dependencias:
+
+```bash
+python3 scripts/audit_dataset.py
+python3 scripts/audit_dataset.py --json
+```
+
+Para recorrer la exploración visual, abrir [data_exploration.ipynb](notebooks/data_exploration.ipynb), seleccionar un kernel de Python y ejecutar las celdas en orden. Requiere un entorno de notebooks, como la extensión Jupyter de VS Code, y estas dependencias opcionales en el entorno del kernel:
+
+```bash
+python3 -m pip install -r notebooks/requirements-notebook.txt
+```
+
+El notebook solo importa y llama funciones de los scripts: auditoría en `scripts/audit_dataset.py` y presentación en `scripts/explore_dataset.py`. Incluye vista previa, resumen, dos gráficos y ejemplos de hallazgos.
+
+Ver [hallazgos, uso de columnas y limitaciones](docs/data-audit.md). La auditoría es de solo lectura; las señales de coincidencia literal no equivalen a errores semánticos.
+
+Los [ocho casos sintéticos de desarrollo](data/synthetic/development.json) especifican comportamientos a revisar antes de implementar los proveedores. No son un conjunto reservado ni resultados de evaluación de un modelo.
 
 ## Arquitectura propuesta
 
@@ -29,7 +50,7 @@ Fine-tuning, múltiples agentes y bases vectoriales quedan fuera del alcance ini
 
 ## Datos y publicación
 
-Se incluye `dataset_challenge_soflex.csv`, provisto para el assessment y descrito en la consigna como sintético. Se conserva sin modificaciones y se atribuye a SOFLEX; no se le asigna una licencia propia ni se presenta como protocolo operativo validado. Se utilizará para ejemplos, catálogo de referencia y evaluación según las separaciones documentadas.
+Se incluye `data/raw/dataset_challenge_soflex.csv`, provisto para el assessment y descrito en la consigna como sintético. Se conserva sin modificaciones y se atribuye a SOFLEX; no se le asigna una licencia propia ni se presenta como protocolo operativo validado. Se utilizará para ejemplos, catálogo de referencia y evaluación según las separaciones documentadas.
 
 El PDF de la consigna se mantiene local, fuera de Git y de la imagen: no hace falta para ejecutar el prototipo. El repositorio permanece privado durante el desarrollo; se prevé hacerlo público al preparar la entrega.
 
