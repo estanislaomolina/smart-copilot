@@ -24,7 +24,7 @@ Rama: `chore/project-roadmap`.
 - [x] Incorporar el CSV sintético provisto, sin modificarlo.
 - [x] Excluir secretos, datos de ejecución y PDF de la consigna.
 - [x] Documentar arquitectura propuesta, roadmap y criterios de aceptación.
-- [ ] Integrar el PR inicial de planificación.
+- [x] Integrar el PR inicial de planificación (PR #1).
 
 ## Hito 1 — Contratos y servicio ejecutable
 
