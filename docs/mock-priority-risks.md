@@ -19,7 +19,7 @@ La ampliación del mock queda acotada a la demostración. El proveedor real se r
 
 Quince reglas reconocen señales acotadas: fuego, personas dentro del lugar, humo, ascensor trabado, dificultad respiratoria, gas, cable chispeando, derrame de combustible, convulsión, atrapamiento vinculado a vehículo, traumatismo, desprendimiento estructural, agua en subsuelos, fuego en contenedor y semáforos apagados.
 
-Se devuelven como inferencias y con texto/offsets verificables. No se copian diagnósticos o detalles añadidos en `riesgos_detectados`: por ejemplo, del caso 009 se devuelve “Posible dificultad respiratoria”, no “hipoxemia pediátrica”.
+Se devuelven con texto/offsets verificables. Los riesgos interpretados conservan `origin=inference`; la presencia de personas reconocida literalmente se etiqueta como información reportada (`origin=transcript`), sin confirmar atrapamiento ni capacidad de salir. Esta distinción de procedencia no altera patrones, disparadores ni prioridades, y un reporte no equivale a verificación independiente. No se copian diagnósticos o detalles añadidos en `riesgos_detectados`: por ejemplo, del caso 009 se devuelve “Posible dificultad respiratoria”, no “hipoxemia pediátrica”.
 
 ## Reglas de prioridad de simulación
 

@@ -1,0 +1,14 @@
+{
+  "entries": [
+    {
+      "question_text": "¿Hay personas atrapadas en el interior?",
+      "follow_up": {
+        "id": "people-inside-trapped-confirmation",
+        "text": "¿La persona que permanece dentro está atrapada, sin poder salir por sus propios medios?",
+        "version": "demo-follow-ups-v1",
+        "source": "Aclaración de demostración añadida al prototipo con autorización del usuario; no proviene del CSV de SOFLEX.",
+        "review_status": "demo_unverified"
+      }
+    }
+  ]
+}

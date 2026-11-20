@@ -33,7 +33,7 @@ Los campos inesperados se rechazan. Las validaciones entre campos se implementan
 
 Las preguntas tienen ID estable, texto y estado `pending`, `answered`, `ambiguous` o `not_applicable`. La respuesta es textual para conservar negaciones y matices:
 
-- Una pregunta pendiente no tiene respuesta, procedencia ni evidencia.
+- Una pregunta pendiente no tiene respuesta ni evidencia. Por defecto no tiene procedencia; el flujo de revisión permite `origin=operator` con justificación para reabrirla sin perder esa decisión al recalcular.
 - Una respondida requiere respuesta y procedencia.
 - Si proviene del relato, requiere evidencia verificable.
 - Ambigüedad y no aplicabilidad requieren justificación.

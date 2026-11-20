@@ -11,6 +11,7 @@ export type Question = {
   status: 'pending' | 'answered' | 'ambiguous' | 'not_applicable';
   answer: string | null; origin: 'transcript' | 'operator' | null;
   evidence: Evidence[]; rationale: string | null;
+  follow_up?: { id: string; text: string; version: string; source: string; review_status: 'demo_unverified' } | null;
 };
 export type IncidentData = {
   location: Record<'street' | 'number' | 'intersection' | 'reference' | 'district', FieldValue>;
@@ -23,11 +24,13 @@ export type Analysis = {
 };
 export type Protocol = {
   id: string; version: string; category: string; subcategory: string;
+  scope: 'general' | 'specific';
   review_status: 'demo_unverified';
 };
 export type ProtocolResult = {
-  selection: 'pending' | 'suggested' | 'selected';
+  selection: 'pending' | 'general' | 'suggested' | 'selected';
   protocol: Protocol | null; candidates: Protocol[]; questions: Question[];
   instructions: { id: string; text: string; source: string; review_status: string }[];
   warnings: string[];
+  review_notices: string[];
 };

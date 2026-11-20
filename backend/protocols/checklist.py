@@ -1,4 +1,4 @@
-"""Resolución conservadora de preguntas explícitas y revisión manual."""
+"""Utilidades de diálogo explícito y combinación conservadora de evidencias."""
 
 import re
 from dataclasses import dataclass
@@ -22,9 +22,10 @@ class Answer:
     evidence: Evidence
     polarity: str | None
     corrected: bool
+    contextual: bool = False
 
 
-def resolve_question(question: QuestionDefinition, transcript: str) -> ProtocolQuestion:
+def direct_answers(question: QuestionDefinition, transcript: str) -> list[Answer]:
     turns = dialogue_turns(transcript)
     expected = canonical(question.text.split("?", 1)[0])
     answers: list[Answer] = []
@@ -48,6 +49,11 @@ def resolve_question(question: QuestionDefinition, transcript: str) -> ProtocolQ
         start, end = turn.start, reply.start + len(reply.text)
         answers.append(Answer(text, Evidence(text=transcript[start:end], start=start, end=end),
                               polarity, corrected))
+    return answers
+
+
+def resolve_answers(question: QuestionDefinition, answers: list[Answer]) -> ProtocolQuestion:
+    answers = sorted(answers, key=lambda answer: answer.evidence.start)
     corrections = [index for index, answer in enumerate(answers) if answer.corrected]
     if corrections:
         answers = answers[corrections[-1]:]

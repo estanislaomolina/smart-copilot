@@ -61,7 +61,8 @@ class MockAnalysisTests(unittest.TestCase):
                     for span in item.evidence:
                         self.assertEqual(text[span.start:span.end], span.text)
                 for risk in result.data.risks:
-                    self.assertEqual(risk.origin, "inference")
+                    expected_origin = "transcript" if risk.rationale.startswith("R-TRAPPED:") else "inference"
+                    self.assertEqual(risk.origin, expected_origin)
                     self.assertTrue(risk.evidence)
                     self.assertTrue(risk.rationale)
                 if result.data.priority.value is not None:

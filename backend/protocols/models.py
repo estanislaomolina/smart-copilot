@@ -6,7 +6,7 @@ from pydantic import Field, model_validator
 
 from backend.domain.models import (
     AnalysisRequest, Category, Contract, IncidentData, NonBlank,
-    PrearrivalInstruction, ProtocolQuestion,
+    FollowUpQuestion, PrearrivalInstruction, ProtocolQuestion,
 )
 
 
@@ -14,9 +14,20 @@ class QuestionDefinition(Contract):
     id: NonBlank
     text: NonBlank
     answer_type: Literal["yes_no", "free_text"]
+    follow_up: FollowUpQuestion | None = None
+
+
+class FollowUpEntry(Contract):
+    question_text: NonBlank
+    follow_up: FollowUpQuestion
+
+
+class FollowUpCatalog(Contract):
+    entries: list[FollowUpEntry]
 
 
 class ProtocolSummary(Contract):
+    scope: Literal["general", "specific"] = "specific"
     id: NonBlank
     version: NonBlank
     category: Category
@@ -65,13 +76,14 @@ class ProtocolRequest(Contract):
 
 
 class ProtocolResult(Contract):
-    selection: Literal["pending", "suggested", "selected"]
-    selection_origin: Literal["subcategory", "operator"] | None = None
+    selection: Literal["pending", "general", "suggested", "selected"]
+    selection_origin: Literal["category", "subcategory", "operator"] | None = None
     protocol: ProtocolSummary | None = None
     candidates: list[ProtocolSummary] = Field(default_factory=list)
     questions: list[ProtocolQuestion] = Field(default_factory=list)
     instructions: list[PrearrivalInstruction] = Field(default_factory=list)
     warnings: list[NonBlank] = Field(default_factory=list)
+    review_notices: list[NonBlank] = Field(default_factory=list)
 
 
 class ProtocolError(Exception):
