@@ -1,6 +1,6 @@
 # Extracción mock inicial
 
-Este documento registra el primer incremento. La ampliación de riesgos y prioridad está en [mock-priority-risks.md](mock-priority-risks.md).
+Este documento registra el primer incremento. Ver las ampliaciones de [riesgos/prioridad](mock-priority-risks.md) y [catálogo/checklist](protocol-engine.md).
 
 Este incremento agrega `POST /api/analyze` con extracción parcial de ubicación y sugerencia de categoría. El proveedor aplica reglas sobre la transcripción; no lee el CSV ni devuelve una fila por ID. Funciona sin credenciales ni servicios externos.
 

@@ -186,7 +186,7 @@ class MockExtractionProvider:
             provider=self.name, model="rules-v2",
             warnings=[
                 "Mock de simulación: sugerencias no validadas para uso operativo. "
-                "Resumen y protocolos pendientes.",
+                "Revisar el protocolo mediante el motor de catálogo separado.",
                 *location_warnings, *category_warnings,
                 *assessment.warnings, *priority_warnings,
             ],
