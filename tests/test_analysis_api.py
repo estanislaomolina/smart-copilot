@@ -1,6 +1,8 @@
 """Entrada HTTP, integración del mock y fallos del contrato de proveedor."""
 
 import os
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
@@ -99,6 +101,32 @@ class AnalysisApiTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health").json()["stage"], "mock_analysis")
         schema = self.client.get("/openapi.json").json()
         self.assertIn("/api/analyze", schema["paths"])
+
+    def test_panel_is_served_without_intercepting_api_routes(self):
+        with TemporaryDirectory() as folder:
+            panel = Path(folder)
+            (panel / "assets").mkdir()
+            (panel / "index.html").write_text("<html>Panel de prueba</html>")
+            (panel / "assets/app.js").write_text("console.log('panel');")
+            with patch.dict(os.environ, {"LLM_PROVIDER": "mock"}):
+                app = create_app(frontend_dir=panel)
+            with TestClient(app) as client:
+                response = client.get("/")
+                self.assertIn("text/html", response.headers["content-type"])
+                self.assertIn("Panel de prueba", response.text)
+                self.assertEqual(response.headers["cache-control"], "no-store")
+                self.assertEqual(client.get("/assets/app.js").status_code, 200)
+                self.assertEqual(client.get("/health").json()["status"], "ok")
+                self.assertEqual(client.post("/api/analyze", json={
+                    "transcript": "Llamante: Hay fuego en Av. Corrientes 1540.",
+                }).status_code, 200)
+
+    def test_api_runs_without_a_built_panel(self):
+        with TemporaryDirectory() as folder:
+            with patch.dict(os.environ, {"LLM_PROVIDER": "mock"}):
+                app = create_app(frontend_dir=Path(folder))
+            with TestClient(app) as client:
+                self.assertEqual(client.get("/").json()["service"], "smart-copilot")
 
     def test_unimplemented_provider_is_rejected_at_startup(self):
         with patch.dict(os.environ, {"LLM_PROVIDER": "real"}):

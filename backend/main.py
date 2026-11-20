@@ -1,11 +1,13 @@
 """API de extracción mock parcial, salud y contratos."""
 
 import os
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from backend.domain.models import (
@@ -24,14 +26,14 @@ def get_provider() -> ExtractionProvider:
     return MockExtractionProvider()
 
 
-def create_app() -> FastAPI:
+def create_app(frontend_dir: Path | None = None) -> FastAPI:
     if os.getenv("LLM_PROVIDER", "mock") != "mock":
         raise RuntimeError("Por ahora solo está implementado LLM_PROVIDER=mock.")
 
     app = FastAPI(
         title="Smart Copilot",
-        version="0.3.0",
-        description="Mock y catálogo de protocolos de demostración. Panel y persistencia pendientes.",
+        version="0.4.0",
+        description="Panel de operador, mock y protocolos de demostración. Persistencia pendiente.",
     )
 
     catalog = ProtocolCatalog()
@@ -63,8 +65,15 @@ def create_app() -> FastAPI:
         response = ErrorResponse(code=error.code, message=message, retryable=error.retryable)
         return JSONResponse(status_code=status, content=response.model_dump())
 
-    @app.get("/", tags=["service"])
-    def root() -> dict[str, str]:
+    # En Docker el build está junto al backend; en desarrollo Vite sirve el panel.
+    panel_dir = frontend_dir if frontend_dir is not None else Path(__file__).resolve().parents[1] / "frontend/dist"
+    if (panel_dir / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=panel_dir / "assets"), name="panel-assets")
+
+    @app.get("/", tags=["service"], response_model=None)
+    def root() -> FileResponse | dict[str, str]:
+        if (panel_dir / "index.html").is_file():
+            return FileResponse(panel_dir / "index.html", headers={"Cache-Control": "no-store"})
         return {"service": "smart-copilot", "stage": "mock_analysis",
                 "health": "/health", "docs": "/docs", "contracts": "/contracts",
                 "analyze": "/api/analyze"}

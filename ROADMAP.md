@@ -55,16 +55,18 @@ Primer incremento — `feat/mock-analysis`:
 - [x] Implementar checklist inicial con evidencia para diálogo explícito y conservación de respuestas manuales compatibles.
 - [ ] Completar la interpretación de respuestas implícitas en relato libre, con revisión humana.
 
-Incremento actual: `feat/protocol-engine`. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
+Incremento actual: `feat/operator-panel`, primer panel de consulta y confirmación de categoría/prioridad. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
 
 - [ ] Cargar ejemplos y texto libre.
-- [ ] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
-- [ ] Mostrar datos, evidencia, preguntas e instrucciones en el panel.
+- [x] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
+- [x] Mostrar datos, evidencia, preguntas e instrucciones en el panel.
+- [x] Cargar texto libre con Enter, confirmar/corregir categoría y prioridad y elegir el tipo de incidente sin menús intermedios.
+- [ ] Editar ubicación y completar respuestas desde el panel.
 - [ ] Permitir correcciones, respuestas y revisión de la carta.
 - [ ] Persistir carta y revisiones en SQLite.
 - [ ] Derivar al CAD simulado con confirmación e identificador visibles.
 
-Aceptación: con `docker compose up --build`, sin claves ni servicios externos durante el uso, se completa el recorrido. Modificar la dirección de un ejemplo cambia el resultado; la carta persiste tras recargar y las correcciones humanas no se pierden al reanalizar.
+Aceptación: con `docker compose up --build`, sin claves ni servicios externos durante el uso, se completa el recorrido. Modificar la dirección de un ejemplo cambia el resultado; la carta persiste tras recargar y las correcciones humanas se conservan al actualizar la guía del incidente.
 
 ## Hito 3 — LLM y controles de incertidumbre
 
