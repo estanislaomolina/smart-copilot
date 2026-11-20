@@ -1,0 +1,4 @@
+# Dependencias de ejecución; el notebook tiene su archivo opcional.
+fastapi==0.135.1
+pydantic==2.12.4
+uvicorn==0.41.0

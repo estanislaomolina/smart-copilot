@@ -33,14 +33,13 @@ Ramas: `feat/dataset-audit` para la auditoría inicial y `feat/domain-foundation
 - [x] Auditar estructura, cobertura y posibles inconsistencias sin modificar el contenido del CSV; incluir notebook visual con lógica en scripts Python.
 - [x] Documentar uso de columnas y revisión puntual de etiquetas en [data-audit.md](docs/data-audit.md).
 - [x] Preparar ocho casos sintéticos de desarrollo con evidencia y expectativas explícitas.
-- [ ] Revisar con el usuario las expectativas sintéticas antes de utilizarlas como referencia.
-- [ ] Modelar transcripción, ubicación, evidencia, tipología, prioridad y carta.
-- [ ] Distinguir campos desconocidos, sugerencias y valores confirmados.
-- [ ] Definir preguntas con identificador y estados pendiente, respondida, ambigua y no aplicable.
-- [ ] Definir contrato común para proveedores y errores.
-- [ ] Crear API mínima, healthcheck y Docker Compose.
+- [x] Modelar transcripción, ubicación, evidencia, tipología, prioridad y carta.
+- [x] Distinguir campos desconocidos, sugerencias y valores confirmados.
+- [x] Definir preguntas con identificador y estados pendiente, respondida, ambigua y no aplicable.
+- [x] Definir contrato común para proveedores y errores.
+- [x] Crear API mínima, healthcheck y Docker Compose.
 
-Aceptación: el servicio arranca desde un entorno limpio y los contratos validan entradas, evidencia y estados inválidos. Solo se analiza texto; no se integra audio.
+Aceptación técnica verificada: el servicio se construye y arranca con Docker Compose; los contratos rechazan evidencia y estados inválidos. Ver [contratos y verificaciones](docs/domain-contracts.md). Los casos sintéticos quedan apartados; el desarrollo inicial utiliza el dataset provisto. Solo se contempla texto; no se integra audio.
 
 ## Hito 2 — Recorrido completo en modo mock
 
@@ -74,6 +73,7 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 Rama sugerida: `feat/evaluation`.
 
 - [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
+- [ ] Tras el primer extractor, decidir qué casos sintéticos adicionales aportan cobertura y revisar sus expectativas antes de usarlos.
 - [ ] Definir y versionar la separación entre desarrollo y evaluación.
 - [ ] Añadir casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones.
 - [ ] Evitar que las respuestas o filas completas de evaluación se filtren al prompt o a la recuperación.

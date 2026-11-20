@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Planificación y auditoría inicial de datos disponibles. La aplicación todavía no está implementada. El comando de arranque de la entrega será `docker compose up --build`.
+Auditoría de datos, contratos y API mínima disponibles. El análisis, el panel y la persistencia todavía no están implementados.
 
 ## Objetivo
 
@@ -13,6 +13,20 @@ El operador carga una transcripción, revisa ubicación, tipología y prioridad 
 ## Roadmap y forma de trabajo
 
 Ver [ROADMAP.md](ROADMAP.md) para hitos, criterios de aceptación y flujo de ramas y pull requests.
+
+## Ejecutar la API
+
+Requiere Docker con Compose:
+
+```bash
+docker compose up --build
+```
+
+El servicio queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). Este incremento levanta la base del backend; todavía no procesa llamadas ni incluye el panel.
+
+No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único modo admitido por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
+
+Para detenerlo: `docker compose down`. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
 
 ## Exploración de datos
 
@@ -33,7 +47,7 @@ El notebook solo importa y llama funciones de los scripts: auditoría en `script
 
 Ver [hallazgos, uso de columnas y limitaciones](docs/data-audit.md). La auditoría es de solo lectura; las señales de coincidencia literal no equivalen a errores semánticos.
 
-Los [ocho casos sintéticos de desarrollo](data/synthetic/development.json) especifican comportamientos a revisar antes de implementar los proveedores. No son un conjunto reservado ni resultados de evaluación de un modelo.
+Los [ocho casos sintéticos de desarrollo](data/synthetic/development.json) quedan apartados por ahora. Primero se trabajará con el dataset provisto; después del primer extractor se decidirá qué casos adicionales hacen falta. No son un conjunto reservado ni resultados de evaluación de un modelo.
 
 ## Arquitectura propuesta
 
