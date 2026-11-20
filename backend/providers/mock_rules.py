@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 from backend.domain.models import Category, Evidence, FieldValue, Priority
 from backend.domain.transcript import Segment, evidence
@@ -15,6 +16,7 @@ class RiskRule:
     label: str
     pattern: str
     source_cases: tuple[str, ...]
+    origin: Literal["transcript", "inference"] = "inference"
 
 
 @dataclass(frozen=True)
@@ -32,11 +34,11 @@ class PriorityRule:
 RISK_RULES = (
     RiskRule("R-FIRE", "Posible exposición a fuego",
              r"\b(?:fuego|incendio|llamas|quema)\b", ("001", "002", "004", "025")),
-    RiskRule("R-TRAPPED", "Posible presencia de personas dentro del lugar",
+    RiskRule("R-TRAPPED", "Presencia de personas informada en el relato",
              r"\b(?:personas?|cocinero|emplead[oa]s?)\s+"
              r"(?:(?:qued[oó]|quedaron|est[aá]n?)\s+)?(?:atrapad[oa]s?|adentro|dentro)\b|"
              r"\badentro\s+(?:qued[oó]|quedaron)\s+(?:(?:el|la|un|una)\s+)?"
-             r"(?:cocinero|personas?|emplead[oa]s?)\b", ("001", "003")),
+             r"(?:cocinero|personas?|emplead[oa]s?)\b", ("001", "003"), origin="transcript"),
     RiskRule("R-SMOKE", "Posible afectación por humo",
              r"\bhumo(?:\s+(?:negro|blanco|gris|denso))?\b", ("001", "025", "030")),
     RiskRule("R-ELEVATOR", "Posible atrapamiento en ascensor",
@@ -147,9 +149,11 @@ def extract_risks(segments: list[Segment]) -> RiskAssessment:
             warnings.append(f"{rule.id}: señal ambigua o contradictoria; confirmar con el llamante.")
         elif "positive" in states:
             signals[rule.id] = FieldValue[str](
-                value=rule.label, origin="inference",
+                value=rule.label, origin=rule.origin,
                 evidence=[item[1] for item in occurrences if item[0] == "positive"],
-                rationale=f"{rule.id}: señal reconocida por reglas del mock; requiere revisión.",
+                rationale=(f"{rule.id}: información reportada por el llamante; no equivale a verificación independiente."
+                           if rule.origin == "transcript"
+                           else f"{rule.id}: señal interpretada por reglas del mock; requiere revisión."),
             )
     return RiskAssessment(signals, unresolved, warnings)
 

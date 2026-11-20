@@ -4,7 +4,7 @@ Este incremento continúa el Hito 2 con catálogo y checklist. El proveedor real
 
 ## Responsabilidades
 
-El mock interpreta la transcripción y entrega datos con evidencia. El motor de protocolos recibe esos datos, selecciona o propone un protocolo y reconstruye el checklist. Las respuestas manuales compatibles se conservan. La pantalla, la persistencia y la derivación de la carta siguen pendientes.
+El mock interpreta la transcripción y entrega datos con evidencia. El motor de protocolos recibe esos datos, selecciona o propone un protocolo y reconstruye el checklist. Las respuestas manuales compatibles se conservan. El panel permite usar la siguiente pregunta y revisar los estados; persistencia y derivación de la carta siguen pendientes.
 
 El motor no importa el proveedor mock ni el futuro LLM. La API de extracción no selecciona protocolos ni genera instrucciones.
 
@@ -24,7 +24,8 @@ Las instrucciones conservan el texto provisto y su fuente. El estado `demo_unver
 
 ## Selección
 
-- Categoría sola: selección pendiente y lista de candidatos, sin preguntas ni instrucciones de un protocolo elegido arbitrariamente.
+- Categoría conocida sin subtipo resuelto: guía general definida para esa categoría, con `selection=general` y `selection_origin=category`. Las opciones de subtipo son opcionales.
+- Categoría desconocida: selección pendiente, sin asumir una categoría ni elegir el primer candidato.
 - Categoría y subtipo con coincidencia única en el catálogo: protocolo sugerido, todavía sujeto a revisión.
 - ID de protocolo seleccionado explícitamente: selección del operador.
 - Si el protocolo elegido contradice una categoría conocida, se devuelve 409 para revisar los datos. Si la categoría es desconocida, se permite la selección explícita con advertencia.
@@ -34,13 +35,19 @@ El ID del protocolo sirve para seleccionar contenido del catálogo, no para reco
 
 ## Checklist
 
-Las preguntas empiezan pendientes. La implementación inicial reconoce preguntas explícitas del operador cuya formulación coincide con la del catálogo, ignorando tildes, puntuación y mayúsculas, y examina el turno siguiente del llamante.
+La selección y la evaluación de preguntas están separadas. `ProtocolEngine` recibe un `ChecklistEvaluator`; tras seleccionar el protocolo solicita evaluar su lista completa contra la conversación. Se validan la estructura Pydantic, el conjunto exacto de IDs, textos inalterados, aclaraciones del catálogo y evidencia literal. El evaluador no puede atribuir revisiones al operador. Se evalúa antes de combinar las revisiones humanas, que siguen teniendo precedencia.
 
-Una respuesta afirmativa o negativa inequívoca a una única pregunta de sí/no se marca como respondida y conserva el contexto completo como evidencia. “No sé”, respuestas no interpretables, varias preguntas seguidas de un solo “sí”, o respuestas contradictorias quedan ambiguas. Una corrección explícita reconocida permite reemplazar las respuestas anteriores.
+El evaluador actual es `MockChecklistEvaluator`, con alcance limitado:
 
-No se marca una pregunta como respondida porque coincida el incidente o porque el CSV de referencia la tenga respondida. Por eso el relato original del caso 001 conserva las preguntas pendientes: este motor todavía no interpreta automáticamente la respuesta implícita sobre el cocinero.
+- Para cualquier pregunta conserva el reconocimiento anterior de pregunta explícita del catálogo y respuesta inmediata.
+- Para la pregunta sobre personas atrapadas reconoce algunas afirmaciones y negaciones espontáneas generales, incertidumbre y correcciones explícitas. No usa IDs de llamadas ni incorpora nombres de ocupaciones.
+- Reutiliza la señal existente de posible presencia de personas dentro como información relacionada: estar dentro no demuestra estar atrapado. El caso 001 queda ambiguo con la cita «adentro quedó el cocinero».
+- Afirmaciones contradictorias siguen siendo ambiguas; una corrección explícita o una aclaración de una presencia anterior puede resolverlas según el repertorio limitado.
+- No se interpretan arbitrariamente todas las preguntas ni todas las paráfrasis. Haiku aún no está implementado para este contrato.
 
-Las respuestas de texto libre y las formulaciones distintas requieren revisión manual en esta versión. La futura integración con Haiku podrá aportar interpretación contextual; este incremento no intenta resolverla con reglas por transcripción.
+Además del catálogo específico derivado del CSV, `data/protocols/general.json` define una guía general por cada una de las seis categorías. Tiene versión propia (`general-demo-v1`) y procedencia de curaduría del prototipo. No se genera desde las filas del dataset ni mediante unión de instrucciones. El catálogo rechaza más de una guía general para la misma categoría y distingue `scope=general` de `scope=specific`. La selección general no confirma un subtipo ni los datos extraídos.
+
+Las aclaraciones se registran aparte en `data/protocols/follow-ups.json`, versión `demo-follow-ups-v1`, con procedencia de curaduría del prototipo y sin validación operativa. Se vinculan por texto de pregunta al cargar el catálogo; no se modifica el CSV ni el catálogo generado. `ProtocolQuestion.follow_up` solo propone una aclaración autorizada cuando la evaluación es ambigua. La guía muestra su evidencia, prioriza la aclaración y permite copiarla al campo Operador. La respuesta posterior se evalúa sobre la misma pregunta original; no se crean respuestas por similitud con filas del CSV.
 
 Al reaplicar un protocolo:
 
@@ -49,7 +56,9 @@ Al reaplicar un protocolo:
 - No se transfieren respuestas manuales a preguntas distintas; se informa su falta de correspondencia.
 - Se valida que la evidencia incluida corresponda al texto recibido.
 
-El contrato admite datos y respuestas manuales, pero todavía no hay panel ni historial persistido de esas revisiones.
+El panel admite revisión manual de las preguntas. Una pregunta `pending` puede tener `origin=operator` y una justificación, sin respuesta ni evidencia: representa una reapertura explícita y se conserva al recalcular. Una respuesta manual `answered` exige texto; `ambiguous` y `not_applicable` exigen justificación. Solo se conservan revisiones cuyo ID y texto coinciden con la pregunta del catálogo.
+
+`ProtocolResult.review_notices` informa diferencias de texto o estado entre el diálogo reconocido y una revisión manual conservada. El panel muestra estos avisos para solicitar revisión. Esta comparación conservadora no verifica contradicciones semánticas ni modifica la respuesta humana. El historial persistido de revisiones sigue pendiente.
 
 ## API
 
@@ -85,6 +94,6 @@ Se agregaron pruebas puntuales de reproducción del catálogo, exclusión de res
 python3 -m unittest discover -s tests -v
 ```
 
-Verificación realizada: pasan 41 tests en total. Docker construye y arranca el servicio con el catálogo incluido. Se comprobaron peticiones HTTP reales para listar candidatos, aplicar un protocolo, conservar una respuesta negativa con evidencia y dejar pendiente una selección sin subtipo.
+Verificación inicial, anterior a las guías generales: pasaban 41 tests en total. Docker construye y arranca el servicio con el catálogo incluido. Se comprobaron peticiones HTTP reales para listar candidatos, aplicar un protocolo, conservar una respuesta negativa con evidencia y dejar pendiente una selección sin subtipo, comportamiento reemplazado por la guía general por categoría.
 
-El siguiente incremento es la pantalla del operador con edición, confirmación y carta persistida. Después se retomará Haiku y se evaluará con material reservado; los 30 registros conocidos no se presentarán como evaluación independiente.
+Después del panel y la guía editable, restan confirmaciones individuales de campos y carta persistida. Después se retomará Haiku y se evaluará con material reservado; los 30 registros conocidos no se presentarán como evaluación independiente.

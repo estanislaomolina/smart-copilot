@@ -53,20 +53,33 @@ Primer incremento — `feat/mock-analysis`:
 - [x] Agregar riesgos y prioridad de simulación con cobertura parcial; no se amplían reglas para perseguir 30/30.
 - [x] Incorporar catálogo de demostración y selección por subtipo o por el operador.
 - [x] Implementar checklist inicial con evidencia para diálogo explícito y conservación de respuestas manuales compatibles.
-- [ ] Completar la interpretación de respuestas implícitas en relato libre, con revisión humana.
+- [x] Separar la evaluación contextual del checklist y cubrir de forma conservadora presencia/atrapamiento con evidencia y aclaración versionada.
+- [ ] Ampliar la comprensión semántica de otras preguntas y paráfrasis con Haiku, conservando revisión humana.
 
-Incremento actual: `feat/operator-panel`, primer panel de consulta y confirmación de categoría/prioridad. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
+Incremento actual: `feat/progressive-conversation`, conversación ampliable sobre el panel de `feat/operator-panel`. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El Hito 2 sigue abierto hasta completar el recorrido del operador.
 
 - [ ] Cargar ejemplos y texto libre.
 - [x] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
 - [x] Mostrar datos, evidencia, preguntas e instrucciones en el panel.
 - [x] Cargar texto libre con Enter, confirmar/corregir categoría y prioridad y elegir el tipo de incidente sin menús intermedios.
-- [ ] Editar ubicación y completar respuestas desde el panel.
+- [x] Agregar turnos y actualizar el historial completo, conservando decisiones humanas y protocolo compatible; mostrar discrepancias y preservar el trabajo ante errores.
+- [x] Guía de atención: instrucciones del catálogo, próxima pregunta utilizable y checklist completo con revisión manual de estados.
+- [x] Iniciar una guía general explícita por categoría conocida, sin bloquear por subtipo ni elegir arbitrariamente un protocolo específico.
+- [ ] Confirmar y corregir campos individualmente, incluida ubicación.
 - [ ] Permitir correcciones, respuestas y revisión de la carta.
 - [ ] Persistir carta y revisiones en SQLite.
 - [ ] Derivar al CAD simulado con confirmación e identificador visibles.
 
 Aceptación: con `docker compose up --build`, sin claves ni servicios externos durante el uso, se completa el recorrido. Modificar la dirección de un ejemplo cambia el resultado; la carta persiste tras recargar y las correcciones humanas se conservan al actualizar la guía del incidente.
+
+### Próximos incrementos revisables
+
+1. Conversación progresiva: turnos, combinación con decisiones manuales y actualización del checklist (implementado; mantiene las limitaciones semánticas del mock).
+2. Guía y checklist: instrucciones, siguiente pregunta y revisión manual de estados implementadas; confirmaciones individuales de campos todavía pendientes.
+3. Carta de Llamada y SQLite: guardar conversación, revisiones, selección de protocolo y decisiones humanas; revisión explícita y derivación simulada. Prioridad sobre mejoras visuales secundarias.
+4. Evidencia resaltada en el texto y sugerencia de protocolo confirmable cuando haya evidencia suficiente; nunca elegir el primero por defecto.
+5. Haiku sobre los mismos contratos y el mismo frontend, con proveedor activo visible.
+6. Verificación integral, documentación y preparación de entrega.
 
 ## Hito 3 — LLM y controles de incertidumbre
 
@@ -102,6 +115,7 @@ Aceptación: un comando documentado reproduce la evaluación y genera resultados
 Rama sugerida: `chore/release-preparation`.
 
 - [ ] Probar arranque limpio, modo mock y persistencia.
+- [ ] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente.
 - [ ] Completar README y memoria de decisiones con resultados y limitaciones reales.
 - [ ] Revisar secretos y contenido de archivos, historial e imagen.
 - [ ] Grabar video de 1–3 minutos: arranque, transcripción, asistencia, corrección y derivación.

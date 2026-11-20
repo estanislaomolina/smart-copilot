@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from backend.domain.models import Evidence
 
-_SPEAKER = re.compile(r"\b(?P<role>Operador|Llamante)\s*:", re.IGNORECASE)
+_SPEAKER = re.compile(r"\b(?P<role>Operador|Llamante|Ciudadano)\s*:", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -27,8 +27,11 @@ def dialogue_turns(transcript: str) -> list[DialogueTurn]:
     turns = list(_SPEAKER.finditer(transcript))
     if not turns:
         return [DialogueTurn("llamante", transcript, 0)]
-    return [
-        DialogueTurn(turn["role"].casefold(), transcript[turn.end():end], turn.end())
+    prefix = transcript[:turns[0].start()]
+    initial = [DialogueTurn("llamante", prefix, 0)] if prefix.strip() else []
+    return initial + [
+        DialogueTurn("llamante" if turn["role"].casefold() == "ciudadano" else turn["role"].casefold(),
+                     transcript[turn.end():end], turn.end())
         for turn, end in zip(turns, [t.start() for t in turns[1:]] + [len(transcript)])
     ]
 

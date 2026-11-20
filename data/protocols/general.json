@@ -1,0 +1,222 @@
+{
+  "version": "general-demo-v1",
+  "source_file": "Curaduría propia de demostración; reutiliza preguntas compatibles del catálogo, sin importar respuestas del CSV.",
+  "protocols": [
+    {
+      "id": "general-incendio-rescate",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "INCENDIO_RESCATE",
+      "subcategory": "Guía general · Incendio y rescate",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-26f9ca7ce07f",
+          "text": "¿Hay personas atrapadas en el interior?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-incendio-rescate-prearrival",
+          "protocol_id": "general-incendio-rescate",
+          "protocol_version": "general-demo-v1",
+          "text": "No se exponga a la zona de peligro ni intente realizar un rescate por su cuenta.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    },
+    {
+      "id": "general-accidente-vial",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "ACCIDENTE_VIAL",
+      "subcategory": "Guía general · Accidente vial",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-4f6595b7c370",
+          "text": "¿Hay personas que no pueden salir de los vehículos?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-accidente-vial-prearrival",
+          "protocol_id": "general-accidente-vial",
+          "protocol_version": "general-demo-v1",
+          "text": "No se exponga al tránsito para observar el incidente. Comunique al operador si hay peligros en el lugar.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    },
+    {
+      "id": "general-emergencia-medica",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "EMERGENCIA_MEDICA",
+      "subcategory": "Guía general · Emergencia médica",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-d1f5b9073a42",
+          "text": "¿La persona está consciente?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-emergencia-medica-prearrival",
+          "protocol_id": "general-emergencia-medica",
+          "protocol_version": "general-demo-v1",
+          "text": "Describa al operador cualquier cambio en el estado de la persona y siga sus indicaciones.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    },
+    {
+      "id": "general-defensa-civil",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "DEFENSA_CIVIL",
+      "subcategory": "Guía general · Defensa civil",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-e3b24c9909ec",
+          "text": "¿Hay estructuras o elementos que puedan caer?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-defensa-civil-prearrival",
+          "protocol_id": "general-defensa-civil",
+          "protocol_version": "general-demo-v1",
+          "text": "No se acerque a estructuras o elementos que parezcan inestables. Comunique cualquier cambio al operador.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    },
+    {
+      "id": "general-servicios-publicos",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "SERVICIOS_PUBLICOS",
+      "subcategory": "Guía general · Servicios públicos",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-fa268bc5d22e",
+          "text": "¿Hay instalaciones dañadas cerca de personas?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-servicios-publicos-prearrival",
+          "protocol_id": "general-servicios-publicos",
+          "protocol_version": "general-demo-v1",
+          "text": "No manipule instalaciones dañadas. Describa al operador lo que observa desde donde se encuentra.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    },
+    {
+      "id": "general-convivencia-seguridad",
+      "version": "general-demo-v1",
+      "scope": "general",
+      "category": "CONVIVENCIA_SEGURIDAD",
+      "subcategory": "Guía general · Convivencia y seguridad",
+      "source_record": "SMART-COPILOT-GENERAL-DEMO-V1",
+      "review_status": "demo_unverified",
+      "questions": [
+        {
+          "id": "q-14ac520f3ed2",
+          "text": "¿Hay una amenaza o agresión en curso?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-2bea6b4e3cfc",
+          "text": "¿Hay personas heridas o en peligro?",
+          "answer_type": "yes_no"
+        },
+        {
+          "id": "q-26d66eaf791a",
+          "text": "¿Puede confirmar la ubicación exacta de la emergencia?",
+          "answer_type": "free_text"
+        }
+      ],
+      "instructions": [
+        {
+          "id": "general-convivencia-seguridad-prearrival",
+          "protocol_id": "general-convivencia-seguridad",
+          "protocol_version": "general-demo-v1",
+          "text": "Evite confrontar a otras personas. Comunique al operador si aparece una amenaza inmediata.",
+          "source": "Curaduría propia para el prototipo Smart Copilot; no deriva de las filas del CSV ni constituye un protocolo operativo validado.",
+          "review_status": "demo_unverified"
+        }
+      ]
+    }
+  ]
+}

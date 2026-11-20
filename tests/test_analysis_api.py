@@ -45,7 +45,10 @@ class AnalysisApiTests(unittest.TestCase):
         self.assertIn("P-FIRE-TRAPPED", result["data"]["priority"]["rationale"])
         self.assertTrue(result["data"]["risks"])
         for field in [*result["data"]["risks"], result["data"]["priority"]]:
-            self.assertEqual(field["origin"], "inference")
+            is_reported_presence = (field.get("rationale") or "").startswith("R-TRAPPED:")
+            self.assertEqual(field["origin"], "transcript" if is_reported_presence else "inference")
+            if is_reported_presence:
+                self.assertEqual(field["value"], "Presencia de personas informada en el relato")
             for span in field["evidence"]:
                 self.assertEqual(text[span["start"]:span["end"]], span["text"])
 

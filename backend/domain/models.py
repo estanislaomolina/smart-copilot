@@ -65,10 +65,19 @@ class Location(Contract):
     district: FieldValue[NonBlank] = Field(default_factory=FieldValue[NonBlank])
 
 
+class FollowUpQuestion(Contract):
+    id: NonBlank
+    text: NonBlank
+    version: NonBlank
+    source: NonBlank
+    review_status: Literal["demo_unverified"] = "demo_unverified"
+
+
 class ProtocolQuestion(Contract):
     id: NonBlank
     text: NonBlank
     status: Literal["pending", "answered", "ambiguous", "not_applicable"] = "pending"
+    follow_up: FollowUpQuestion | None = None
     answer: NonBlank | None = None
     origin: Literal["transcript", "operator"] | None = None
     evidence: list[Evidence] = Field(default_factory=list)
@@ -77,8 +86,10 @@ class ProtocolQuestion(Contract):
     @model_validator(mode="after")
     def check_state(self) -> ProtocolQuestion:
         if self.status == "pending":
-            if self.answer is not None or self.origin is not None or self.evidence:
+            if self.answer is not None or self.origin not in (None, "operator") or self.evidence:
                 raise ValueError("Una pregunta pendiente no tiene respuesta ni evidencia.")
+            if self.origin == "operator" and not self.rationale:
+                raise ValueError("Reabrir una pregunta requiere justificación del operador.")
         else:
             if self.origin is None:
                 raise ValueError("Un estado resuelto o ambiguo requiere procedencia.")

@@ -15,6 +15,7 @@ from backend.domain.models import (
 )
 from backend.providers.base import ExtractionProvider, ProviderError
 from backend.providers.mock import MockExtractionProvider
+from backend.providers.checklist_mock import MockChecklistEvaluator
 from backend.protocols.catalog import ProtocolCatalog
 from backend.protocols.engine import ProtocolEngine
 from backend.protocols.models import (
@@ -37,7 +38,7 @@ def create_app(frontend_dir: Path | None = None) -> FastAPI:
     )
 
     catalog = ProtocolCatalog()
-    engine = ProtocolEngine(catalog)
+    engine = ProtocolEngine(catalog, MockChecklistEvaluator())
 
     @app.exception_handler(ProtocolError)
     async def protocol_error(_request: Request, error: ProtocolError) -> JSONResponse:
