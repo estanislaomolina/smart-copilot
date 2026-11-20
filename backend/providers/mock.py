@@ -10,6 +10,8 @@ from backend.domain.models import (
     AnalysisRequest, AnalysisResult, Category, Evidence, FieldValue, IncidentData,
     Location,
 )
+from backend.domain.transcript import Segment, caller_segments, evidence
+from backend.providers.mock_rules import extract_risks, suggest_priority
 
 # Nombres propios y conectores frecuentes. No intenta resolver geografía ni aliases.
 _WORD = r"(?:[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+|[A-ZÁÉÍÓÚÑ]\.?)"
@@ -19,7 +21,6 @@ _ADDRESS = re.compile(rf"(?P<street>{_STREET})\s+(?i:al\s+)?(?P<number>\d{{1,5}}
 _INTERSECTION = re.compile(rf"(?P<street>{_STREET})\s+y\s+(?P<cross>{_STREET})")
 _NEARBY = re.compile(rf"(?i:casi|entre|cerca de|esquina de)\s+(?P<cross>{_STREET}(?:\s+y\s+{_STREET})?)")
 _REFERENCE = re.compile(rf"(?P<street>(?i:av\.?|avenida|autopista)\s+{_NAME})(?:\s+(?i:altura)\s+(?P<reference>{_NAME}))?")
-_SPEAKER = re.compile(r"\b(?P<role>Operador|Llamante)\s*:", re.IGNORECASE)
 _CORRECTION = re.compile(
     r"(?:perd[oó]n[, :]+|(?P<explicit>(?:la\s+)?altura correcta es\s+)|corrijo[, :]+)"
     r"(?P<number>\d{1,5})\b", re.IGNORECASE,
@@ -32,12 +33,6 @@ _NEGATED = re.compile(
     r"\b(?:no hay|no hubo|no veo|no se ve|sin)\s+(?:\w+\s+){0,2}$",
     re.IGNORECASE,
 )
-
-
-@dataclass(frozen=True)
-class Segment:
-    text: str
-    start: int
 
 
 @dataclass(frozen=True)
@@ -74,24 +69,6 @@ _CATEGORY_RULES = (
     CategoryRule("CONVIVENCIA_SEGURIDAD",
                  r"\bpelea\b|\bperro[^.]{0,80}\b(?:sin bozal|gru[nñ]endo|agresivo)\b"),
 )
-
-
-def caller_segments(transcript: str) -> list[Segment]:
-    """Mantiene offsets originales y excluye las preguntas del operador."""
-    turns = list(_SPEAKER.finditer(transcript))
-    if not turns:
-        return [Segment(transcript, 0)]
-    return [
-        Segment(transcript[turn.end():end], turn.end())
-        for turn, end in zip(turns, [t.start() for t in turns[1:]] + [len(transcript)])
-        if turn["role"].casefold() == "llamante"
-    ]
-
-
-def evidence(segment: Segment, match: re.Match[str], group: str | int = 0) -> Evidence:
-    start, end = match.span(group)
-    return Evidence(text=segment.text[start:end],
-                    start=segment.start + start, end=segment.start + end)
 
 
 def extracted(span: Evidence) -> FieldValue[str]:
@@ -200,11 +177,17 @@ class MockExtractionProvider:
         segments = caller_segments(request.transcript)
         location, location_warnings = extract_location(segments)
         category, category_warnings = extract_category(segments)
+        assessment = extract_risks(segments)
+        priority, priority_warnings = suggest_priority(assessment, category)
         return AnalysisResult(
-            request=request, data=IncidentData(location=location, category=category),
-            provider=self.name, model="rules-v1",
+            request=request,
+            data=IncidentData(location=location, category=category,
+                              risks=list(assessment.signals.values()), priority=priority),
+            provider=self.name, model="rules-v2",
             warnings=[
-                "Mock parcial: prioridad, riesgos, resumen y protocolos aún no implementados.",
+                "Mock de simulación: sugerencias no validadas para uso operativo. "
+                "Revisar el protocolo mediante el motor de catálogo separado.",
                 *location_warnings, *category_warnings,
+                *assessment.warnings, *priority_warnings,
             ],
         )
