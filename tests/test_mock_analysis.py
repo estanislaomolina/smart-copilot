@@ -60,8 +60,14 @@ class MockAnalysisTests(unittest.TestCase):
                     self.assertNotEqual(item.origin, "operator")
                     for span in item.evidence:
                         self.assertEqual(text[span.start:span.end], span.text)
-                self.assertIsNone(result.data.priority.value)
-                self.assertEqual(result.data.risks, [])
+                for risk in result.data.risks:
+                    self.assertEqual(risk.origin, "inference")
+                    self.assertTrue(risk.evidence)
+                    self.assertTrue(risk.rationale)
+                if result.data.priority.value is not None:
+                    self.assertEqual(result.data.priority.origin, "inference")
+                    self.assertTrue(result.data.priority.evidence)
+                    self.assertTrue(result.data.priority.rationale)
                 self.assertEqual(result.data.questions, [])
 
     def test_changed_address_is_processed_instead_of_original_row(self):
