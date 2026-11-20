@@ -18,6 +18,7 @@ export type IncidentData = {
   category: FieldValue; subcategory: FieldValue; priority: FieldValue;
   risks: FieldValue[]; summary: FieldValue; questions: Question[];
 };
+export type ManualField = 'category' | 'priority' | `location.${keyof IncidentData['location']}`;
 export type Analysis = {
   request: { transcript: string }; data: IncidentData;
   provider: 'mock' | 'real'; model: string | null; warnings: string[];
@@ -33,4 +34,32 @@ export type ProtocolResult = {
   instructions: { id: string; text: string; source: string; review_status: string }[];
   warnings: string[];
   review_notices: string[];
+};
+
+export type CallStatus = 'draft' | 'reviewed' | 'referred';
+export type CallContext = {
+  analysis: Analysis | null; protocol: ProtocolResult | null;
+  manual_fields: ManualField[];
+  operator_turn: string; caller_turn: string;
+  prepared_question: { id: string; protocol_id: string; prompt: string; number: number; stage: 'prepared' | 'awaiting_reply' } | null;
+  question_update: { id: string; number: number } | null;
+  update_notices: string[];
+};
+export type CallSnapshot = {
+  request: Analysis['request']; data: IncidentData; operator_notes: string; context: CallContext;
+};
+export type StoredCall = {
+  card: { id: string; revision: number; status: CallStatus; request: Analysis['request'];
+    data: IncidentData; operator_notes: string; instructions: ProtocolResult['instructions'];
+    created_at: string; reviewed_at: string | null; referred_at: string | null };
+  context: CallContext; updated_at: string;
+  referral: { id: string; mode: 'simulation'; destination: 'CAD simulado';
+    reviewed_revision: number; created_at: string } | null;
+};
+export type CallSummary = {
+  id: string; revision: number; status: CallStatus; updated_at: string;
+  category: string | null; priority: string | null;
+};
+export type RevisionSummary = {
+  revision: number; event: 'saved' | 'reviewed' | 'referred'; created_at: string;
 };

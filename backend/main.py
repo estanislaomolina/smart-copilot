@@ -10,6 +10,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
+from backend.calls.models import CallStoreError
+from backend.calls.routes import call_routes
+from backend.calls.store import CallStore
+
 from backend.domain.models import (
     AnalysisRequest, AnalysisResult, CallCard, Category, ErrorResponse, HealthResponse,
 )
@@ -27,18 +31,30 @@ def get_provider() -> ExtractionProvider:
     return MockExtractionProvider()
 
 
-def create_app(frontend_dir: Path | None = None) -> FastAPI:
+def create_app(frontend_dir: Path | None = None, db_path: Path | None = None) -> FastAPI:
     if os.getenv("LLM_PROVIDER", "mock") != "mock":
         raise RuntimeError("Por ahora solo está implementado LLM_PROVIDER=mock.")
 
     app = FastAPI(
         title="Smart Copilot",
-        version="0.4.0",
-        description="Panel de operador, mock y protocolos de demostración. Persistencia pendiente.",
+        version="0.5.0",
+        description="Panel de operador, cartas persistidas y derivación CAD simulada.",
     )
 
     catalog = ProtocolCatalog()
     engine = ProtocolEngine(catalog, MockChecklistEvaluator())
+    store = CallStore(db_path or Path(os.getenv("CALLS_DB_PATH", "data/private/calls.sqlite3")), catalog)
+    app.include_router(call_routes(store))
+
+    @app.exception_handler(CallStoreError)
+    async def call_error(_request: Request, error: CallStoreError) -> JSONResponse:
+        status, message = {
+            "call_not_found": (404, "Llamada no encontrada."),
+            "revision_conflict": (409, "Hay una versión más reciente. Recuperá la llamada antes de guardar."),
+            "review_required": (409, "La carta requiere revisión explícita antes de derivar."),
+            "invalid_call": (422, "Revisá protocolo, checklist y turnos sin incorporar antes de confirmar la carta."),
+        }[error.code]
+        return JSONResponse(status_code=status, content=ErrorResponse(code=error.code, message=message).model_dump())
 
     @app.exception_handler(ProtocolError)
     async def protocol_error(_request: Request, error: ProtocolError) -> JSONResponse:

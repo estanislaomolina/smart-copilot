@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay panel para analizar texto, inspeccionar evidencia, corregir categoría/prioridad y seleccionar protocolos. La conversación admite nuevos turnos y actualización del análisis conservando decisiones manuales. La guía muestra instrucciones, próxima pregunta y checklist editable. Confirmaciones individuales de campos, edición de ubicación, persistencia y derivación siguen pendientes. La integración LLM con Haiku se hará después de completar ese flujo.
+Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay panel para analizar texto, inspeccionar evidencia, corregir categoría/prioridad y seleccionar protocolos. La conversación admite nuevos turnos y actualización del análisis conservando decisiones manuales. La guía muestra instrucciones, próxima pregunta y checklist editable. La Carta de Llamada ya se guarda en SQLite, se recupera al recargar, admite revisión explícita y derivación simulada. Categoría, prioridad y cada campo de ubicación tienen revisión individual. La integración LLM con Haiku se hará después de completar ese flujo.
 
 ## Objetivo
 
@@ -26,23 +26,25 @@ El panel queda accesible en [localhost:8000](http://localhost:8000), con [salud]
 
 No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
 
-Para detenerlo: `docker compose down`. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
+Para detenerlo: `docker compose down`. El volumen `call-data` conserva las llamadas al recrear el contenedor. `docker compose down -v` elimina ese volumen y sus datos; no usarlo si se quiere conservar la atención. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
 
 ## Primer recorrido del operador
 
 1. Pegar una transcripción y presionar **Enter** para analizar. **Shift+Enter** agrega una línea. También se puede usar **Analizar llamada**.
-2. En **Revisar datos**, comprobar ubicación, categoría y prioridad; corregir los selectores o usar **Confirmar sugerencias** para aceptar los valores disponibles.
+2. En **Revisar datos**, los valores muestran su estado (sugerido, revisado o sin información). **Editar** abre el control de categoría, prioridad o ubicación: **Confirmar** acepta el valor existente, **Guardar** aplica una corrección y **Cancelar** descarta la edición. La revisión individual es opcional; no es necesario confirmar todos los campos para continuar. Guardar un valor vacío lo deja sin información y conserva esa decisión al actualizar el análisis.
 3. En **Guiar la llamada**, la categoría conocida activa automáticamente una guía general. No hace falta elegir subtipo para comenzar; **Elegir subtipo (opcional)** permite cambiar a una guía específica. La guía muestra: instrucciones del catálogo con advertencia de demostración, próxima pregunta y checklist completo. **Usar esta pregunta** copia su texto al campo Operador y enfoca la respuesta del ciudadano. La guía, el campo preparado y el checklist muestran el mismo número de pregunta. Si se incorpora primero el turno del operador, queda esperando la respuesta del ciudadano; al agregarla se muestra el estado devuelto por el backend y su evidencia. Preparar o preguntar no marca el ítem como respondido. Editar libremente la pregunta o cambiar de guía quita la asociación preparada; la revisión manual conserva su precedencia. La guía destaca **DECIR AHORA** y **PREGUNTAR DESPUÉS**. Se prioriza una pregunta ambigua con aclaración del catálogo, después otras ambiguas y luego pendientes; dentro de cada grupo se conserva el orden del catálogo. Es un orden de asistencia de demostración, no una política clínica de prioridades. No se selecciona un protocolo por defecto cuando hay varios candidatos.
 4. En **Continuar conversación**, agregar lo dicho por el operador y/o el ciudadano y pulsar **Agregar y actualizar análisis** (Enter desde la respuesta; Shift+Enter agrega una línea). Se analiza el historial completo y se actualiza el checklist.
-5. **Nueva llamada** limpia la pantalla y enfoca el campo de texto en un solo paso. **Volver a la llamada anterior** permite recuperar el último borrador, incluidos turnos sin enviar, hasta que se analice otra llamada.
+5. **Revisar Carta de Llamada** muestra categoría, prioridad, ubicación, protocolo, señales con procedencia, preguntas pendientes y evidencia. Permite redactar el resumen y las observaciones del operador.
+6. **Guardar borrador** guarda el estado actual. Para **Confirmar revisión**, marcar la declaración de revisión; los turnos sin incorporar deben enviarse o vaciarse primero. Después se habilita **Derivar · Simulación**, que registra fecha e identificador `SIM-CAD-…` sin contactar un CAD real.
+7. **Nueva llamada** guarda primero la actual y luego limpia el espacio. Si el guardado falla, no abandona la llamada. **Volver a la llamada anterior** y **Recuperar llamada** permiten reabrir las llamadas persistidas.
 
 En escritorio, transcripción, datos y guía se muestran en tres columnas dentro de la altura disponible. Los paneles de datos y guía permiten desplazamiento propio cuando el contenido lo requiere; evidencia, fuentes y explicaciones se despliegan a demanda. En pantallas angostas los bloques se reorganizan para mantener el texto legible.
 
 El historial existente queda fijo para conservar los offsets de evidencia. Los nuevos turnos se anexan al final: es una simulación de transcripción progresiva, no una propuesta para que un operador real transcriba mientras atiende. No hay acción de reanálisis sobre el mismo texto. Cambiar categoría o tipo de incidente actualiza las preguntas sin volver a ejecutar el extractor.
 
-Al añadir turnos se conserva categoría/prioridad revisada, incluso si el operador decidió dejarlas sin determinar. La combinación también preserva campos con procedencia de operador y respuestas manuales compatibles. Si una sugerencia nueva difiere de una decisión humana se muestra un aviso; no la sobrescribe. El protocolo elegido explícitamente se mantiene cuando corresponde a la categoría; la guía general automática se vuelve a decidir por la categoría actual; si deja de corresponder se solicita elegir otro. La extracción y el cálculo del protocolo deben terminar correctamente antes de reemplazar el estado visible. Si falla alguno, se conservan el historial anterior, sus correcciones y los turnos sin enviar para reintentar. El límite es de 50.000 caracteres para la conversación completa.
+Al añadir turnos se conserva categoría, prioridad y ubicación revisadas, incluso si el operador decidió dejarlas sin determinar. La combinación también preserva campos con procedencia de operador y respuestas manuales compatibles. Si una sugerencia nueva difiere de una decisión humana se muestra un aviso; no la sobrescribe. El protocolo elegido explícitamente se mantiene cuando corresponde a la categoría; la guía general automática se vuelve a decidir por la categoría actual; si deja de corresponder se solicita elegir otro. La extracción y el cálculo del protocolo deben terminar correctamente antes de reemplazar el estado visible. Si falla alguno, se conservan el historial anterior, sus correcciones y los turnos sin enviar para reintentar. El límite es de 50.000 caracteres para la conversación completa.
 
-La comprensión del mock sigue siendo conservadora: anexar una respuesta no garantiza que una paráfrasis se interprete correctamente. Un evaluador contextual separado reconoce diálogo explícito y un repertorio limitado sobre personas atrapadas; una señal de presencia dentro solo aporta evidencia ambigua, nunca confirma atrapamiento. Las otras preguntas conservan la interpretación de diálogo explícito; no se añadieron reglas por registro para este incremento. Por ahora todo vive en memoria: recargar pierde el trabajo. No hay guardado ni derivación. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
+La comprensión del mock sigue siendo conservadora: anexar una respuesta no garantiza que una paráfrasis se interprete correctamente. Un evaluador contextual separado reconoce diálogo explícito y un repertorio limitado sobre personas atrapadas; una señal de presencia dentro solo aporta evidencia ambigua, nunca confirma atrapamiento. Las otras preguntas conservan la interpretación de diálogo explícito; no se añadieron reglas por registro para este incremento. El estado se guarda localmente en SQLite; la derivación es una simulación explícita. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
 
 El caso del incendio con una persona dentro queda ambiguo con cita verificable. La guía propone una aclaración registrada en `data/protocols/follow-ups.json` (`demo-follow-ups-v1`), con procedencia propia y advertencia de demostración; no procede del CSV. El archivo original y el catálogo generado se mantienen intactos. El motor selecciona protocolos y combina revisiones manuales; `ChecklistEvaluator` recibe solamente conversación y preguntas del protocolo, y su salida se valida contra IDs, textos, aclaraciones autorizadas y offsets. `MockChecklistEvaluator` es la única implementación actual. Haiku sigue pendiente: no hay evaluación semántica general ni llamadas externas.
 
@@ -52,9 +54,31 @@ La prioridad muestra explícitamente **Prioridad sugerida: P1** o **Prioridad co
 
 El bloque **DECIR AHORA** se destaca en rojo y negrita como acción de comunicación, no como indicador de una nueva gravedad. El panel central separa **Información reportada**, **Por aclarar** y **Riesgos potenciales**. La señal existente de presencia de personas usa procedencia `transcript` y etiqueta de reporte; no confirma atrapamiento ni capacidad de salir, y no equivale a verificación independiente. Los patrones de detección y las reglas de prioridad se mantienen. La prioridad sugerida y la certeza de cada dato se muestran por separado.
 
-Cada pregunta tiene un selector de estado y una acción **Revisar**. Marcarla respondida requiere una respuesta; pendiente por decisión manual, ambigua y no aplicable requieren una justificación. **Guardar revisión** valida el cambio en el backend y conserva la procedencia humana. Si el diálogo posterior aporta una respuesta distinta o incierta, se muestra un aviso sin reemplazar lo registrado por el operador. La comparación inicial es conservadora sobre texto/estado; no demuestra equivalencia o contradicción semántica. Las preguntas e instrucciones siempre provienen del protocolo aplicado. No se agregan preguntas en el frontend. El botón global de confirmación de campos sigue siendo provisional y su reemplazo por acciones individuales queda para el siguiente incremento.
+Cada pregunta tiene un selector de estado y una acción **Revisar**. Marcarla respondida requiere una respuesta; pendiente por decisión manual, ambigua y no aplicable requieren una justificación. **Guardar revisión** valida el cambio en el backend y conserva la procedencia humana. Si el diálogo posterior aporta una respuesta distinta o incierta, se muestra un aviso sin reemplazar lo registrado por el operador. La comparación inicial es conservadora sobre texto/estado; no demuestra equivalencia o contradicción semántica. Las preguntas e instrucciones siempre provienen del protocolo aplicado. No se agregan preguntas en el frontend. La confirmación aparece dentro de la edición, sin botones permanentes junto a cada sugerencia. La revisión final sigue disponible desde la Carta. La confirmación es individual: aceptar la categoría no confirma la prioridad ni cambia el protocolo o las respuestas revisadas. Solo cambiar la categoría vuelve a calcular la guía.
 
 Para desarrollar el panel: Node 24 y `cd frontend && npm ci && npm run dev`, con la API en el puerto 8000 (`uvicorn backend.main:app --reload`). Vite usa un proxy local para `/api`. `cd frontend && npm run build` verifica TypeScript y genera el build; FastAPI sirve ese build en Docker, sin proceso Node durante la ejecución. React/React DOM implementan la interfaz; TypeScript valida tipos y Vite compila los assets. Las versiones resueltas están en el lockfile.
+
+## Carta de Llamada y persistencia
+
+La interfaz guarda automáticamente tras 700 ms sin cambios, cuando no está analizando. La franja superior distingue **Cambios sin guardar**, **Guardando** y **Guardada en SQLite**. Recargar antes de que termine una escritura puede perder los últimos cambios; el botón de guardado permite comprobar su resultado. No se promete guardado mientras la API está caída.
+
+Se conserva la transcripción completa, extracción original, datos revisados, evidencia, confirmaciones manuales, protocolo y checklist, resumen, notas y turnos todavía sin incorporar. Cada modificación efectiva genera una versión completa; un guardado idéntico no genera otra versión. El historial visible muestra eventos y fechas; las instantáneas anteriores quedan en SQLite, sin una interfaz para restaurar versiones antiguas.
+
+La revisión corresponde a una versión de la carta, **no confirma automáticamente cada campo**. Las sugerencias y los datos desconocidos conservan su procedencia. En esta demostración se permite revisar con preguntas pendientes, visibles en la ficha; todavía no existe una política operativa validada de campos obligatorios. Cualquier modificación persistida posterior, incluidos turnos en preparación, devuelve la carta a borrador y exige revisar nuevamente antes de derivar. Los comprobantes anteriores se conservan en el historial. Reintentar una derivación de la misma revisión devuelve el mismo comprobante.
+
+SQLite usa control de versión para evitar sobrescribir cambios desde otra pestaña. Si otra escritura se adelantó, se informa el conflicto y se permite **Descartar cambios locales y recuperar guardado**, de forma explícita. No se combinan silenciosamente dos ediciones concurrentes.
+
+API:
+
+- `GET /api/calls`: últimas 50 llamadas, ordenadas por actualización.
+- `GET /api/calls/{uuid}`: carta y estado de atención completo.
+- `PUT /api/calls/{uuid}`: `{expected_revision, snapshot}`; usar revisión 0 al crear.
+- `GET /api/calls/{uuid}/revisions`: últimos 100 eventos y versiones.
+- `POST /api/calls/{uuid}/review` y `/refer`: `{expected_revision, acknowledged: true}`.
+
+El servidor controla estados, fechas e identificadores. Valida evidencia y referencias del checklist, y toma las instrucciones del catálogo en lugar de confiar en las enviadas por el cliente. Los modelos completos están en `/docs`.
+
+Sin Docker, `CALLS_DB_PATH` permite cambiar la ruta predeterminada `data/private/calls.sqlite3`. En Compose se utiliza `/app/data/private/calls.sqlite3` dentro del volumen. No se guarda la base en Git ni se incorpora a la imagen. El navegador conserva solamente el UUID de la llamada activa en `localStorage`; los datos están en el servidor local. Es un prototipo local sin autenticación ni política de retención para operación real.
 
 ## Analizar una transcripción
 
@@ -99,6 +123,10 @@ Verificación de guías generales: 51 tests del backend, cuatro del frontend y b
 
 Verificación de seguimiento y procedencia: se mantuvieron los 51 tests del backend y cuatro del frontend. Se comprobaron en Docker/Chromium el contraste rojo/negrita, vínculo por ID y número de pregunta, envío separado de pregunta y respuesta, evidencia en el ítem actualizado, recuperación de la llamada y eliminación de la asociación al editar libremente el texto. La procedencia de presencia se distingue del riesgo inferido; no se cambiaron patrones ni reglas de prioridad.
 
+Verificación de Carta y SQLite: 56 tests del backend (cinco nuevos para persistencia y transiciones), cuatro del frontend y build. En Chromium se comprobaron guardado y recarga con prioridad manual y turnos sin incorporar, revisión explícita, derivación simulada, recuperación del comprobante, invalidación al editar, listado de llamadas y presentación móvil. Se verificó también la conservación de respuestas manuales del checklist y un conflicto de escritura: el borrador local sigue visible y la versión del servidor solo se recupera por acción explícita. La llamada sobrevivió a recrear el contenedor con su volumen. La imagen no incorpora la base de ejecución. Estas comprobaciones no evalúan la precisión semántica del mock ni reemplazan la corrida final pendiente.
+
+Verificación de revisión individual: 56 tests del backend, cinco del frontend y build. Se cubren los cinco campos de ubicación y el vaciado explícito frente a una nueva extracción; SQLite conserva sus decisiones. En Chromium se comprobó que confirmar categoría no confirma prioridad ni borra la guía o respuestas manuales, y que las correcciones sobreviven a agregar turnos y recargar y se reflejan en la Carta. Se comprobó también la vista móvil. El ajuste de edición a demanda se comprobó con build, las cinco pruebas del frontend y Chromium: ausencia de confirmaciones permanentes, confirmar/guardar/cancelar dentro del editor, conservación al actualizar y recargar, Carta y vista móvil. La revisión final no exige confirmar campo por campo. No se ampliaron reglas de extracción ni se realizó la corrida final de los 30 registros.
+
 Se comparan valores esperados revisados del CSV y variaciones de sus relatos. Son pruebas de desarrollo, no una evaluación independiente de generalización.
 
 ## Exploración de datos
@@ -131,7 +159,7 @@ Los [ocho casos sintéticos de desarrollo](data/synthetic/development.json) qued
 - Protocolos: catálogo local versionado con procedencia y estado de revisión.
 - Ejecución: Docker Compose, sin servicios externos necesarios durante el uso del modo mock.
 
-Flujo: transcripción → extracción → validación → selección de protocolo → revisión humana → carta persistida. La derivación a CAD será simulada e identificada como tal.
+Flujo: transcripción → extracción → validación → selección de protocolo → revisión humana → carta persistida. La derivación a CAD es simulada e identificada como tal.
 
 Fine-tuning, múltiples agentes y bases vectoriales quedan fuera del alcance inicial.
 

@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
 COPY backend ./backend
 COPY data/protocols ./data/protocols
 COPY --from=panel /panel/dist ./frontend/dist
+RUN mkdir -p /app/data/private && chown appuser:appuser /app/data/private
 USER appuser
 EXPOSE 8000
 
