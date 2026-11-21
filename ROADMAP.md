@@ -100,16 +100,17 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 
 Rama sugerida: `feat/evaluation`.
 
-Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y checklist por separado, conserva resultados parciales y genera entradas para revisión humana. Hay ocho casos reservados con expectativas y hash versionados. Se intentaron EVAL-01 y EVAL-02: el primero falló en extracción; el segundo completó el recorrido con siete coincidencias literales. Tres solicitudes en total, sin reintentos. Quedan seis casos sin ejecutar y la revisión humana pendiente. No se cambió el sistema a partir del resultado. Ver [tandas y acumulado](docs/evaluation-results.md). Las verificaciones con Mock continúan usando los dos casos conocidos. Ver [protocolo y límites](docs/evaluation.md). Falta ejecutar las tandas reales y revisar las salidas; no se declara completo el hito.
+Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y checklist por separado, conserva resultados parciales y genera entradas para revisión humana. Hay ocho casos reservados con expectativas y hash versionados. Se completaron los ocho casos una vez cada uno: tres coincidencias completas de comprobaciones, dos diferencias de ubicación y tres errores de salida inválida. Doce solicitudes en total, sin reintentos y con pausas; revisión asistida realizada y revisión humana independiente pendiente. No se cambió el sistema a partir del resultado. Ver [tandas y acumulado](docs/evaluation-results.md). Las verificaciones con Mock continúan usando los dos casos conocidos. Ver [protocolo y límites](docs/evaluation.md). La corrida inicial está terminada. Queda la revisión humana de expectativas e interpretaciones, resolver o documentar las limitaciones detectadas y preparar la evaluación final.
 
 - [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
 - [ ] Tras el primer extractor, decidir qué casos sintéticos adicionales aportan cobertura y revisar sus expectativas antes de usarlos.
 - [x] Definir y versionar la separación entre desarrollo y evaluación; conjunto reservado v1 fijado antes de la primera tanda.
 - [x] Añadir ocho casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones; expectativas previas y hash versionado.
 - [x] Mantener expectativas fuera de las entradas del proveedor en el comando de evaluación; verificación de esa separación sin red.
-- [ ] Evaluar ubicación, categoría, prioridad, checklist y afirmaciones sin respaldo.
+- [x] Ejecutar la primera evaluación de ubicación, categoría y estados del checklist, contabilizar salidas inválidas y revisar las salidas como agente. Prioridad sin clasificación automática en modo LLM; sin validación P1–P4.
+- [ ] Completar revisión humana independiente de expectativas y soporte semántico; no sustituirla por coincidencia literal ni inspección del agente.
 - [x] Implementar conteos, fallos, latencia por etapa e intentos observados. Consumo no disponible en el contrato: se registra null. Mediciones reales y revisión pendientes.
-- [ ] Distinguir resultados reales de pruebas mock; documentar cobertura limitada y ausencia de P4 en el dataset original.
+- [x] Distinguir resultados reales de pruebas mock; documentar muestra sintética pequeña, errores, revisión asistida y ausencia de P4 en el dataset original.
 
 Aceptación: un comando documentado reproduce la evaluación y genera resultados identificando casos, proveedor y configuración. No se afirma generalización por subcategoría a partir de una sola muestra.
 

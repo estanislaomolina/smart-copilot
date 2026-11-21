@@ -4,7 +4,7 @@
 
 - data/raw/dataset_challenge_soflex.csv: 30 casos originales ya conocidos durante desarrollo. Se conservan intactos y su corrida queda para el final; no sirven como evaluación independiente.
 - data/evaluation/development.json: dos casos conocidos utilizados para comprobar el comando y analizar fallos.
-- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. Se prepararon sin ejecutar ni usarse para modificar prompts o reglas. Posteriormente se intentaron dos casos: uno falló en extracción y otro completó extracción y checklist. Los otros seis siguen sin ejecutar. Ver [resultados](evaluation-results.md).
+- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. Se prepararon sin ejecutar ni usarse para modificar prompts o reglas. Posteriormente se ejecutó la primera corrida completa, sin repeticiones: tres casos coinciden con las comprobaciones, dos tienen diferencias y tres fallaron en extracción. No se usaron los resultados para ajustar esta versión. Ver [resultados](evaluation-results.md).
 - data/synthetic/development.json: ocho especificaciones previas apartadas; no se incorporaron automáticamente a esta evaluación.
 
 Los casos reservados cubren las seis categorías, presencia frente a atrapamiento, respuestas descriptivas, negativas, altura ausente o incierta, corrección completa de dirección, información insuficiente e instrucciones no confiables dentro del relato. Las preguntas esperadas existen en el catálogo general. Las notas por caso orientan la revisión, sin llegar al proveedor.
@@ -100,3 +100,9 @@ python3 scripts/evaluate.py --merge-reports artifacts/evaluation/groq-eval-[0-9]
 
 Seleccionar solo los reportes de resultados, sin archivos de diagnóstico ni copias revisadas del mismo caso. El comando conserva fallos previos y los tiempos de etapas no iniciadas quedan null. Rechaza reportes duplicados, IDs repetidos o configuraciones distintas; las ejecuciones repetidas deben compararse por separado, sin reemplazar la primera.
 Cada fuente se identifica por nombre y hash. No se consultan proveedores ni se incluyen claves o cuerpos remotos. El código de salida sigue siendo 1 si hay diferencias, errores u omisiones.
+
+## Corrida completa posterior
+
+Se completaron los ocho casos con doce solicitudes, sin reintentos y con pausas; no hubo respuestas 429. Se conservan tres errores, dos casos con diferencias y tres casos coincidentes con las comprobaciones.
+La inspección asistida del agente abarcó las treinta entradas utilizables: veintiséis consideradas respaldadas y cuatro inciertas. La revisión humana sigue pendiente y no se afirma una tasa de alucinaciones ni precisión general.
+Ver [resultados, límites y siguientes decisiones](evaluation-results.md) y [resumen versionado](evaluation-results-v1.json). Los prompts, las reglas, el catálogo y las expectativas quedaron sin cambios durante esta corrida.

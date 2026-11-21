@@ -1,0 +1,279 @@
+{
+  "report_version": 2,
+  "created_at": "2026-11-21T21:54:44.396931+00:00",
+  "cases_sha256": "4afc6d9160783803ab67b24899ae7d7475624f59cf3667cb4de20bd50cecaf8a",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "prompt_version": "incident-v6",
+  "configuration": {
+    "reasoning_effort": "medium",
+    "timeout_seconds": 20.0,
+    "max_retries": 0
+  },
+  "counts": {
+    "passed": 3,
+    "failed": 2,
+    "error": 3,
+    "skipped": 0
+  },
+  "summary": {
+    "literal_comparisons": {
+      "category": {
+        "compared": 5,
+        "matched": 5
+      },
+      "location": {
+        "compared": 17,
+        "matched": 13
+      },
+      "question_status": {
+        "compared": 6,
+        "matched": 6
+      }
+    },
+    "location_cases": {
+      "with_compared_fields": 5,
+      "all_compared_fields_matched": 3
+    },
+    "errors_by_code": {
+      "invalid_provider_output": 3
+    },
+    "terminal_invalid_outputs": 3,
+    "latency_seconds": {
+      "extraction": {
+        "samples": 8,
+        "min": 1.638513,
+        "median": 3.235443,
+        "max": 4.011781
+      },
+      "checklist": {
+        "samples": 5,
+        "min": 0.000324,
+        "median": 2.042708,
+        "max": 2.456373
+      },
+      "total": {
+        "samples": 8,
+        "min": 1.638873,
+        "median": 4.271892,
+        "max": 5.608455
+      }
+    },
+    "human_review": {
+      "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+      "total": 30,
+      "pending": 30,
+      "supported": 0,
+      "unsupported": 0,
+      "uncertain": 0
+    }
+  },
+  "source_reports": [
+    {
+      "name": "groq-eval-01.json",
+      "sha256": "20b222878c859a85ce9adc4f483f8507e2f94317909baf5d4b250880f1c378c1"
+    },
+    {
+      "name": "groq-eval-02.json",
+      "sha256": "2f0c6800cb83f6312a667586212f5b2c4369ed0f0a47c6139c8d06f2f3bef131"
+    },
+    {
+      "name": "groq-eval-03.json",
+      "sha256": "ed2bed606a7cf5114804f0a24579ce8db7acfd2c71dc89520512cb278a63aed6"
+    },
+    {
+      "name": "groq-eval-04.json",
+      "sha256": "5a1aa140b0be561141adabb0b49d6ec14d7f56edce306cbab416879c22665d4b"
+    },
+    {
+      "name": "groq-eval-05.json",
+      "sha256": "cf83023bd6da9fff9125ebdb113f7aa772d2bc7a1b8f7f521ef1ef58f866eabf"
+    },
+    {
+      "name": "groq-eval-06.json",
+      "sha256": "c9dc5d2fd61d927de97a57dfd94149006b25df5c946462edc47c369d077ef081"
+    },
+    {
+      "name": "groq-eval-07.json",
+      "sha256": "277ee0d07023f226ffdabecd6e666877ad3e91462d6cb5974b9f6b86abd17f29"
+    },
+    {
+      "name": "groq-eval-08.json",
+      "sha256": "ed9aeaa7db231b8c23975d455f197bf445c3f6e09e0663e853fed52a0655a544"
+    }
+  ],
+  "kind": "sanitized_evaluation_summary",
+  "evaluation_code_commit": "f562623",
+  "consolidation_code_commit": "748eaf6",
+  "requests_observed": 12,
+  "agent_review": {
+    "reviewer_type": "coding_agent",
+    "independent_human_review": false,
+    "counts": {
+      "supported": 26,
+      "unsupported": 0,
+      "uncertain": 4
+    },
+    "note": "No es tasa de alucinaciones: unidades compuestas, solo salidas válidas y pendientes de revisión humana."
+  },
+  "cases": [
+    {
+      "id": "EVAL-01",
+      "status": "error",
+      "code": "invalid_provider_output",
+      "timings_seconds": {
+        "extraction": 4.011781,
+        "checklist": null,
+        "total": 4.011818
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": null
+      },
+      "literal_checks": {
+        "matched": 0,
+        "compared": 0
+      },
+      "differing_targets": []
+    },
+    {
+      "id": "EVAL-02",
+      "status": "passed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 2.971686,
+        "checklist": 2.042708,
+        "total": 5.014527
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 1
+      },
+      "literal_checks": {
+        "matched": 7,
+        "compared": 7
+      },
+      "differing_targets": []
+    },
+    {
+      "id": "EVAL-03",
+      "status": "failed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 2.278008,
+        "checklist": 2.253863,
+        "total": 4.531966
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 1
+      },
+      "literal_checks": {
+        "matched": 3,
+        "compared": 5
+      },
+      "differing_targets": [
+        "location.street",
+        "location.district"
+      ]
+    },
+    {
+      "id": "EVAL-04",
+      "status": "failed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 3.15198,
+        "checklist": 2.456373,
+        "total": 5.608455
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 1
+      },
+      "literal_checks": {
+        "matched": 3,
+        "compared": 5
+      },
+      "differing_targets": [
+        "location.street",
+        "location.district"
+      ]
+    },
+    {
+      "id": "EVAL-05",
+      "status": "passed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 3.641717,
+        "checklist": 1.809107,
+        "total": 5.450906
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 1
+      },
+      "literal_checks": {
+        "matched": 6,
+        "compared": 6
+      },
+      "differing_targets": []
+    },
+    {
+      "id": "EVAL-06",
+      "status": "error",
+      "code": "invalid_provider_output",
+      "timings_seconds": {
+        "extraction": 3.647116,
+        "checklist": null,
+        "total": 3.647182
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": null
+      },
+      "literal_checks": {
+        "matched": 0,
+        "compared": 0
+      },
+      "differing_targets": []
+    },
+    {
+      "id": "EVAL-07",
+      "status": "passed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 1.638513,
+        "checklist": 0.000324,
+        "total": 1.638873
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 0
+      },
+      "literal_checks": {
+        "matched": 5,
+        "compared": 5
+      },
+      "differing_targets": []
+    },
+    {
+      "id": "EVAL-08",
+      "status": "error",
+      "code": "invalid_provider_output",
+      "timings_seconds": {
+        "extraction": 3.318907,
+        "checklist": null,
+        "total": 3.318935
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": null
+      },
+      "literal_checks": {
+        "matched": 0,
+        "compared": 0
+      },
+      "differing_targets": []
+    }
+  ]
+}
