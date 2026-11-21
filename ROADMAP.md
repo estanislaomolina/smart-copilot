@@ -114,6 +114,12 @@ Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y check
 
 Aceptación: un comando documentado reproduce la evaluación y genera resultados identificando casos, proveedor y configuración. No se afirma generalización por subcategoría a partir de una sola muestra.
 
+### Mejora de fiabilidad posterior
+
+Se implementaron diagnósticos seguros por intento, medición explícita de cero/un reintento y extracción sola, protección contra sobrescritura de reportes y política de referencia para ubicaciones sin tipo determinado (incident-v7).
+Los ocho casos observados se consideran desarrollo para ajustes posteriores. Se congelaron dos casos nuevos antes de consultarlos: uno completó seis comprobaciones y otro falló por formato incluso con el segundo intento. Ver [resultados completos e incidencia de ejecución](docs/llm-reliability-results.md).
+No se declara una mejora general de precisión o fiabilidad. La política de ubicación ambigua se verificó con transporte controlado, pero su caso real reservado no produjo datos válidos. La línea base y los 30 registros originales quedan intactos.
+
 ## Hito 5 — Entrega
 
 Rama sugerida: `chore/release-preparation`.

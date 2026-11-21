@@ -72,7 +72,7 @@ Se prepararon [ocho casos reservados](data/evaluation/holdout-v1.json), con expe
 
 Groq debe seleccionarse explícitamente con --provider groq y requiere la clave exportada en el entorno; el script no carga .env. El evaluador desactiva sus reintentos por defecto y se detiene ante 429; --max-retries 1 permite medir explícitamente la corrección acotada. Con el límite por defecto puede realizar como máximo cuatro solicitudes. La configuración de reintentos del producto permanece igual. El consumo no está disponible en el contrato y se registra como null.
 
-Ver [protocolo de evaluación, comandos y revisión humana](docs/evaluation.md). La mejora incident-v7 incorpora diagnósticos por intento y conserva nombres de ubicación ambiguos como referencias; ver [cambios y medición acotada](docs/llm-reliability.md). La primera corrida del Hito 4 está completa, con resultados mixtos y revisión asistida documentada. La revisión humana independiente sigue pendiente; no se afirma precisión general ni validación operativa.
+Ver [protocolo de evaluación, comandos y revisión humana](docs/evaluation.md). La mejora incident-v7 incorpora diagnósticos por intento y conserva nombres de ubicación ambiguos como referencias; ver [cambios y medición acotada](docs/llm-reliability.md). En dos casos nuevos, uno completó seis comprobaciones y otro falló por formato aun con el reintento; ver [resultados y límites](docs/llm-reliability-results.md). No se afirma mejora global. La primera corrida del Hito 4 está completa, con resultados mixtos y revisión asistida documentada. La revisión humana independiente sigue pendiente; no se afirma precisión general ni validación operativa.
 
 ## Carta de Llamada y persistencia
 

@@ -53,3 +53,8 @@ Estas pruebas técnicas no demuestran precisión del modelo real. Los resultados
 
 El comando rechaza un destino existente antes de construir el proveedor o enviar solicitudes. Para reemplazar un reporte debe elegirse explícitamente --overwrite; nunca puede sobrescribir sus propios casos de entrada ni fuentes de consolidación.
 Este control se añadió después de una repetición accidental de una corrida de desarrollo durante una interrupción de ejecución. La incidencia debe figurar en los resultados y no atribuirse a un fallo del modelo ni ocultarse.
+
+## Resultados reales
+
+La comparación de desarrollo, la incidencia de ejecución y la primera corrida nueva están en [llm-reliability-results.md](llm-reliability-results.md).
+Un caso nuevo completó seis comprobaciones y el otro falló aun con el reintento. No se afirma una mejora global ni se borra la línea base.

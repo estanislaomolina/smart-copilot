@@ -20,8 +20,10 @@
     {
       "path": "data/evaluation/holdout-v2.json",
       "sha256": "2ea8e804e6dd3443fc5d7a8e6d3f92e389e59bfdeba3e5d624f8f5b84466bc6d",
-      "status": "reserved_for_first_incident_v7_run",
-      "note": "Congelado antes de ejecutar proveedores; no usar para ajustar durante la corrida."
+      "status": "first_run_completed",
+      "note": "Congelado antes de ejecutar proveedores; no usar para ajustar durante la corrida.",
+      "evaluated_prompt": "incident-v7",
+      "future_use_if_tuning": "development"
     },
     {
       "path": "data/evaluation/diagnostic-development-v2.json",
