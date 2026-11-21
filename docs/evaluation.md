@@ -112,3 +112,5 @@ Ver [resultados, límites y siguientes decisiones](evaluation-results.md) y [res
 Los ocho casos de la línea base pasan a desarrollo para cambios posteriores, según splits.json. No se borran sus resultados ni se reescriben sus expectativas.
 holdout-v2 contiene dos casos nuevos congelados antes de ejecutar proveedores. Ver [diagnóstico, política de ubicación y medición de correcciones](llm-reliability.md).
 --extract-only limita la medición a extracción. --max-retries 1 mide el presupuesto del producto; la configuración y el modo quedan registrados y no se consolidan con corridas distintas.
+
+Los reportes existentes no se reemplazan por defecto: elegir una ruta nueva o --overwrite explícito. El rechazo ocurre antes de consultar al proveedor. Los casos de entrada y las fuentes de una consolidación nunca pueden ser el destino, incluso con esa opción.

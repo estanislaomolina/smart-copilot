@@ -1,6 +1,6 @@
 """Integridad del evaluador, sin red ni juicios de precisión del modelo."""
 import asyncio
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 import io
 import json
 import os
@@ -130,6 +130,10 @@ class EvaluationTests(unittest.TestCase):
                  redirect_stdout(io.StringIO()):
                 self.assertEqual(main(), 0)
             result = json.loads(report.read_text())
+            with patch("sys.argv", argv), patch("httpx.Client", side_effect=AssertionError("No consultar")), \
+                 redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as stopped:
+                main()
+            self.assertEqual(stopped.exception.code, 2)
         self.assertEqual(len(sent), 1)
         self.assertEqual(json.loads(sent[0]["messages"][1]["content"]), {"transcript": "Llamante: No sé."})
         self.assertEqual(result["configuration"]["max_retries"], 0)

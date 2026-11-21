@@ -325,6 +325,7 @@ class GroqTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertNotIn("private-marker", calls[1].content.decode())
         self.assertEqual([e["outcome"] for e in trace], ["remote_schema", "valid"])
+        self.assertEqual(trace[0]["issues"], [{"type": "json_invalid", "field": "response"}])
         self.assertNotIn("private-marker", json.dumps(trace))
         calls = []
         def invalid(request):

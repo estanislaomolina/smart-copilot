@@ -302,12 +302,15 @@ def main() -> int:
     parser.add_argument("--max-retries", type=int, choices=(0, 1), default=0,
                         help="Cero por defecto; uno permite medir la corrección acotada del producto.")
     parser.add_argument("--extract-only", action="store_true", help="Medir solo extracción, sin consultar el checklist.")
+    parser.add_argument("--overwrite", action="store_true", help="Permitir reemplazar explícitamente un reporte existente.")
     args = parser.parse_args()
     if args.merge_reports:
         if args.summarize_review:
             parser.error("Elegí consolidación o resumen de revisión.")
         if args.output.resolve() in {path.resolve() for path in args.merge_reports}:
             parser.error("El reporte consolidado no puede sobrescribir una entrada.")
+        if args.output.exists() and not args.overwrite:
+            parser.error("El reporte ya existe; elegí otra ruta o --overwrite.")
         report = merge_reports(args.merge_reports)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -318,6 +321,8 @@ def main() -> int:
         report = json.loads(args.summarize_review.read_text(encoding="utf-8"))
         print(json.dumps(summarize_review(report["results"]), ensure_ascii=False, indent=2))
         return 0
+    if args.output.exists() and not args.overwrite:
+        parser.error("El reporte ya existe; elegí otra ruta o --overwrite.")
     if args.limit < 1:
         parser.error("--limit debe ser positivo.")
     if args.output.resolve() == args.cases.resolve():

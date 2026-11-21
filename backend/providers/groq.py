@@ -32,6 +32,14 @@ def strict_schema(model: type[BaseModel]) -> dict:
     return adapt(model.model_json_schema())
 
 
+def validation_issues(error: ValidationError) -> list[dict]:
+    """Diagnóstico sin valores, citas, mensajes remotos ni nombres de campos extra."""
+    roots = {"location", "category", "subcategory", "risks", "summary", "questions"}
+    return [{"type": issue["type"],
+             "field": next((part for part in issue["loc"] if part in roots), "response")}
+            for issue in error.errors(include_input=False, include_context=False, include_url=False)]
+
+
 class GroqGateway:
     def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None,
                  on_attempt: Callable[[dict], None] | None = None):
@@ -108,7 +116,16 @@ class GroqGateway:
                 except (ValueError, AttributeError):
                     remote_code = None
                 if status == 400 and remote_code == "json_validate_failed":
-                    record("remote_schema")
+                    # La generación rechazada se interpreta solo como JSON local para diagnosticar.
+                    # Nunca se publica, se almacena en el evento ni se introduce en el prompt.
+                    issues = [{"type": "remote_schema_unexplained", "field": "response"}]
+                    failed = error.response.json().get("error", {}).get("failed_generation")
+                    if isinstance(failed, str):
+                        try:
+                            schema.model_validate_json(failed, context=payload)
+                        except ValidationError as validation:
+                            issues = validation_issues(validation)
+                    record("remote_schema", issues)
                     if attempt == self.settings.retries:
                         raise ProviderError("invalid_provider_output", "Groq rechazó la generación por esquema inválido.") from None
                     # Una corrección acotada, sin copiar la generación fallida ni mensajes externos al prompt.
@@ -124,12 +141,7 @@ class GroqGateway:
                 record("connection_error")
                 code, transient = "provider_unavailable", True
             except ValidationError as error:
-                # Solo tipos y raíz del contrato: nunca valores, citas, mensajes remotos ni claves.
-                roots = {"location", "category", "subcategory", "risks", "summary", "questions"}
-                safe_issues = [{"type": issue["type"],
-                                "field": next((part for part in issue["loc"] if part in roots), "response")}
-                               for issue in error.errors(include_input=False, include_context=False, include_url=False)]
-                record("local_validation", safe_issues)
+                record("local_validation", validation_issues(error))
                 if attempt == self.settings.retries:
                     raise ProviderError("invalid_provider_output", "Salida de Groq inválida.") from error
                 # La cita debe existir antes de publicar el resultado; nunca se corrige por aproximación.

@@ -8,7 +8,7 @@ Los tipos distinguen validación local, rechazo remoto de esquema, truncamiento,
 No se puede reconstruir retrospectivamente la causa de EVAL-01. EVAL-06 tenía cita inexistente y EVAL-08 rechazo remoto de esquema. No se inventa la propiedad exacta que Groq rechazó en este último.
 
 La corrección sigue limitada a un intento adicional y comparte presupuesto con reintentos de transporte. Un HTTP 429 no se reintenta. Truncamientos, negativas y herramientas no se convierten en correcciones automáticas. Si el segundo intento falla, no se publican los datos inválidos.
-La salida previa y errores locales usados para corregir permanecen como datos no confiables dentro de la conversación de corrección; nunca como instrucciones del sistema. No se hace fuzzy matching de citas ni se usa failed_generation remoto.
+La salida previa y errores locales usados para corregir permanecen como datos no confiables dentro de la conversación de corrección; nunca como instrucciones del sistema. No se hace fuzzy matching de citas. Una generación remota rechazada, si está disponible, se valida localmente solo para obtener códigos seguros; nunca se publica ni se introduce en el prompt.
 
 ## Ubicación sin tipo determinado
 
@@ -48,3 +48,8 @@ Los 30 registros del CSV original siguen fuera de estas pruebas.
 83 pruebas Python pasan. Los transportes controlados comprueban recuperación de un rechazo remoto y de una cita inválida, agotamiento del presupuesto, rechazo de truncamiento, ausencia de datos en los diagnósticos y conservación de la referencia ambigua.
 El evaluador comprueba conteo de recuperaciones y omisión completa del checklist en extracción sola.
 Estas pruebas técnicas no demuestran precisión del modelo real. Los resultados reales posteriores deben registrarse por separado sin borrar la línea base.
+
+## Conservación de reportes
+
+El comando rechaza un destino existente antes de construir el proveedor o enviar solicitudes. Para reemplazar un reporte debe elegirse explícitamente --overwrite; nunca puede sobrescribir sus propios casos de entrada ni fuentes de consolidación.
+Este control se añadió después de una repetición accidental de una corrida de desarrollo durante una interrupción de ejecución. La incidencia debe figurar en los resultados y no atribuirse a un fallo del modelo ni ocultarse.

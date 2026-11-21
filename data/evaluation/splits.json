@@ -22,6 +22,14 @@
       "sha256": "2ea8e804e6dd3443fc5d7a8e6d3f92e389e59bfdeba3e5d624f8f5b84466bc6d",
       "status": "reserved_for_first_incident_v7_run",
       "note": "Congelado antes de ejecutar proveedores; no usar para ajustar durante la corrida."
+    },
+    {
+      "path": "data/evaluation/diagnostic-development-v2.json",
+      "status": "development",
+      "source_cases": [
+        "holdout-v2:V2-01"
+      ],
+      "note": "Sonda posterior al resultado reservado, sin reescribirlo. No se cuenta como otra evaluación independiente."
     }
   ]
 }
