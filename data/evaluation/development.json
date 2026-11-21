@@ -1,0 +1,50 @@
+{
+  "split": "development",
+  "description": "Casos propios ya expuestos durante desarrollo. No son evaluación independiente.",
+  "cases": [
+    {
+      "id": "DEV-LIVE-NEGATION",
+      "transcript": "Llamante: Hay fuego en un depósito de calle Las Heras 820, cerca del cruce con Rivadavia. Todos salieron y pueden alejarse por sus propios medios. No hay nadie atrapado ni personas heridas.",
+      "fields": {
+        "category": "INCENDIO_RESCATE",
+        "location.street": "Las Heras",
+        "location.number": "820",
+        "location.intersection": "Rivadavia",
+        "location.district": null
+      },
+      "questions": [
+        {
+          "text": "¿Hay personas atrapadas en el interior?",
+          "status": "answered",
+          "answer": "No"
+        },
+        {
+          "text": "¿Hay personas heridas o en peligro?",
+          "status": "answered",
+          "answer": "No"
+        }
+      ]
+    },
+    {
+      "id": "DEV-LIVE-CORRECTION",
+      "transcript": "Llamante: Hay humo en Belgrano 230, esquina Mitre. No sé si quedó alguien dentro.\nOperador: Confirme la dirección y si hay personas adentro.\nLlamante: Me equivoqué de dirección: es San Martín 480, casi Sarmiento. El encargado acaba de salir, ya no queda nadie dentro. No hay heridos.",
+      "fields": {
+        "location.street": "San Martín",
+        "location.number": "480",
+        "location.intersection": "Sarmiento",
+        "location.district": null
+      },
+      "questions": [
+        {
+          "text": "¿Hay personas atrapadas en el interior?",
+          "status": "answered",
+          "answer": "No"
+        },
+        {
+          "text": "¿Hay personas heridas o en peligro?",
+          "status": "ambiguous"
+        }
+      ]
+    }
+  ]
+}

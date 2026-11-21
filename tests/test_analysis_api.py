@@ -133,7 +133,7 @@ class AnalysisApiTests(unittest.TestCase):
 
     def test_unimplemented_provider_is_rejected_at_startup(self):
         with patch.dict(os.environ, {"LLM_PROVIDER": "real"}):
-            with self.assertRaisesRegex(RuntimeError, "solo está implementado"):
+            with self.assertRaisesRegex(RuntimeError, "LLM_PROVIDER"):
                 create_app()
 
 

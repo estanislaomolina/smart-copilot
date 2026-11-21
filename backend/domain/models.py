@@ -198,7 +198,7 @@ class CallCard(Contract):
 class ErrorResponse(Contract):
     code: Literal[
         "invalid_input", "provider_unavailable", "provider_timeout",
-        "invalid_provider_output", "unsupported_provider",
+        "invalid_provider_output", "unsupported_provider", "provider_rate_limited",
         "protocol_not_found", "protocol_category_mismatch",
         "call_not_found", "revision_conflict", "review_required", "invalid_call",
     ]
@@ -208,5 +208,6 @@ class ErrorResponse(Contract):
 
 class HealthResponse(Contract):
     status: Literal["ok"] = "ok"
-    stage: Literal["mock_analysis"] = "mock_analysis"
-    configured_provider: Literal["mock"] = "mock"
+    stage: Literal["mock_analysis", "llm_analysis"] = "mock_analysis"
+    configured_provider: Literal["mock", "haiku", "groq"] = "mock"
+    configured_model: NonBlank | None = None

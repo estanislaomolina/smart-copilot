@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { analyze, applyProtocol } from './api';
+import { analyze, applyProtocol, getProviderInfo } from './api';
 import { appendTurns, compatibleProtocolId, mergeReviewedData, nextGuidanceQuestion } from './conversation';
 import type { ManualField } from './conversation';
 import type { Analysis, FieldValue, IncidentData, ProtocolResult, Question } from './types';
 import { useCallPersistence } from './useCallPersistence';
 import { CallCardDialog } from './CallCardDialog';
-import type { CallSnapshot, StoredCall } from './types';
+import type { CallSnapshot, StoredCall, ProviderInfo } from './types';
 import './style.css';
 
 const categories = {
@@ -20,7 +20,7 @@ const locationLabels = {
 };
 const originLabels = {
   unknown: 'Desconocido', transcript: 'Extraído del relato',
-  inference: 'Sugerencia del mock', operator: 'Confirmado por operador',
+  inference: 'Inferencia por revisar', operator: 'Confirmado por operador',
 };
 const statusLabels = {
   pending: 'Pendiente', answered: 'Respondida', ambiguous: 'Ambigua', not_applicable: 'No aplica',
@@ -44,7 +44,7 @@ function FieldView({ label, field }: { label?: string; field: FieldValue }) {
     {label && <span className="field-label">{label}</span>}
     <strong>{field.value ?? 'Sin información'}</strong>
     <span className={'origin ' + field.origin} title={originLabels[field.origin]}>
-      {{ unknown: 'Sin dato', transcript: 'Relato', inference: 'Mock', operator: 'Operador' }[field.origin]}
+      {{ unknown: 'Sin dato', transcript: 'Relato', inference: 'Inferido', operator: 'Operador' }[field.origin]}
     </span>
   </>;
   return field.evidence.length || field.rationale
@@ -76,7 +76,7 @@ function ReviewField({ name, field, options, disabled, onReview }: {
           onClick={() => setEditing(false)}>Cancelar</button>
       </div>
     </form> : <div className="review-field-value">
-      <strong>{field.value ? options[field.value] ?? field.value : 'Sin información'}</strong>
+      <strong>{field.value ? options[field.value] ?? field.value : 'Sin definir'}</strong>
       <button className="text-action" aria-label={'Editar ' + name.toLowerCase()} disabled={disabled}
         onClick={() => { setValue(field.value ?? ''); setEditing(true); }}>Editar</button>
     </div>}
@@ -184,6 +184,15 @@ function QuestionView({ question, disabled, onSave, number, prepared, waiting, u
 function App() {
   const [transcript, setTranscript] = useState('');
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [manualMode, setManualMode] = useState(false);
+  const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
+  const [providerInfoError, setProviderInfoError] = useState(false);
+  useEffect(() => {
+    let current = true;
+    void getProviderInfo().then(info => { if (current) setProviderInfo(info); })
+      .catch(() => { if (current) setProviderInfoError(true); });
+    return () => { current = false; };
+  }, []);
   const [data, setData] = useState<IncidentData | null>(null);
   const transcriptInput = useRef<HTMLTextAreaElement>(null);
   const callerInput = useRef<HTMLTextAreaElement>(null);
@@ -206,10 +215,10 @@ function App() {
   const [protocolError, setProtocolError] = useState('');
   const [protocolBusy, setProtocolBusy] = useState(false);
 
-  async function loadProtocols(result: Analysis, nextData: IncidentData, id?: string) {
+  async function loadProtocols(result: Pick<Analysis, 'request'>, nextData: IncidentData, id?: string, manual = manualMode) {
     setProtocolBusy(true); setProtocolError('');
     try {
-      const next = await applyProtocol(result.request, nextData, id);
+      const next = await applyProtocol(result.request, nextData, id, manual);
       if (next.protocol?.id !== protocol?.protocol?.id) {
         setPreparedQuestion(null); setQuestionUpdate(null);
       }
@@ -220,7 +229,7 @@ function App() {
     } finally { setProtocolBusy(false); }
   }
   async function runAnalysis() {
-    if (busy || protocolBusy || analysis || !transcript.trim()) return;
+    if (busy || protocolBusy || analysis || manualMode || !transcript.trim()) return;
     setBusy(true); setError('');
     try {
       const result = await analyze(transcript);
@@ -234,19 +243,21 @@ function App() {
     } finally { setBusy(false); }
   }
   async function addTurns() {
-    if (!analysis || !data || busy || protocolBusy || updating.current) return;
+    if ((!analysis && !manualMode) || !data || busy || protocolBusy || updating.current) return;
     updating.current = true; setBusy(true); setError('');
     try {
-      const transcript = appendTurns(analysis.request.transcript, operatorTurn, callerTurn);
-      const extracted = await analyze(transcript);
-      const merged = mergeReviewedData(extracted.data, { ...data, questions: protocol?.questions ?? [] }, manualFields);
+      const nextTranscript = appendTurns(transcript, operatorTurn, callerTurn);
+      const extracted = manualMode ? null : await analyze(nextTranscript);
+      const request = { transcript: nextTranscript };
+      const merged = extracted ? mergeReviewedData(extracted.data, { ...data, questions: protocol?.questions ?? [] }, manualFields)
+        : { data: structuredClone(data), notices: [] };
       const id = compatibleProtocolId(protocol, merged.data);
       if (protocol?.selection === 'selected' && protocol.protocol && !id) {
         merged.notices.push('El protocolo anterior no coincide con la categoría actual. Elegí el tipo de incidente nuevamente.');
       }
-      const nextProtocol = await applyProtocol(extracted.request, merged.data, id);
+      const nextProtocol = await applyProtocol(request, merged.data, id, manualMode);
       // Publicar la actualización solo si extracción y protocolo terminaron bien.
-      setTranscript(transcript); setAnalysis(extracted);
+      setTranscript(nextTranscript); setAnalysis(extracted);
       setData({ ...merged.data, questions: nextProtocol.questions });
       setProtocol(nextProtocol); setProtocolError(''); setChangingType(false);
       setUpdateNotices(merged.notices);
@@ -265,11 +276,11 @@ function App() {
     }
   }
   async function saveQuestion(question: Question) {
-    if (!analysis || !data || !protocol?.protocol || busy || protocolBusy) return;
+    if ((!analysis && !manualMode) || !data || !protocol?.protocol || busy || protocolBusy) return;
     const nextData = { ...data, questions: protocol.questions.map(old => old.id === question.id ? question : old) };
     setProtocolBusy(true);
     try {
-      const result = await applyProtocol(analysis.request, nextData, compatibleProtocolId(protocol, nextData));
+      const result = await applyProtocol({ transcript }, nextData, compatibleProtocolId(protocol, nextData), manualMode);
       setProtocol(result); setData({ ...nextData, questions: result.questions });
       if (questionUpdate?.id === question.id) setQuestionUpdate(null);
       if (preparedQuestion?.id === question.id) setPreparedQuestion(null);
@@ -289,7 +300,7 @@ function App() {
     });
   }
   function review(key: 'category' | 'priority', value: string) {
-    if (!data || !analysis) return;
+    if (!data || (!analysis && !manualMode)) return;
     const prior = data[key];
     const field: FieldValue = value
       ? { ...prior, value, origin: 'operator',
@@ -305,7 +316,7 @@ function App() {
       setProtocol(null); setChangingType(false);
     }
     setData(next);
-    if (categoryChanged) void loadProtocols(analysis, next);
+    if (categoryChanged) void loadProtocols({ request: { transcript } }, next);
   }
   function reviewLocation(key: keyof IncidentData['location'], value: string) {
     if (!data || locked) return;
@@ -325,7 +336,7 @@ function App() {
       setPreviousCallId(previous?.card.id ?? null);
       setPreparedQuestion(null); setQuestionUpdate(null);
       setOperatorTurn(''); setCallerTurn(''); setManualFields([]); setUpdateNotices([]);
-      setTranscript(''); setAnalysis(null); setData(null); setProtocol(null); setOperatorNotes('');
+      setTranscript(''); setAnalysis(null); setManualMode(false); setData(null); setProtocol(null); setOperatorNotes('');
       setChangingType(false); setError(''); setProtocolError('');
       requestAnimationFrame(() => transcriptInput.current?.focus());
     } catch { /* El error de guardado se muestra sin abandonar la llamada. */ }
@@ -337,7 +348,7 @@ function App() {
   function restore(item: StoredCall) {
     const context = item.context;
     setTranscript(item.card.request.transcript); setData(item.card.data);
-    setAnalysis(context.analysis); setProtocol(context.protocol);
+    setAnalysis(context.analysis); setManualMode(context.manual_mode ?? false); setProtocol(context.protocol);
     setManualFields(context.manual_fields); setOperatorTurn(context.operator_turn);
     setCallerTurn(context.caller_turn); setUpdateNotices(context.update_notices);
     setQuestionUpdate(context.question_update); setOperatorNotes(item.card.operator_notes);
@@ -366,7 +377,7 @@ function App() {
   const snapshot: CallSnapshot | null = transcript.trim() ? {
     request: { transcript }, data: { ...(data ?? emptyData), questions: checklistQuestions },
     operator_notes: operatorNotes,
-    context: { analysis, protocol, manual_fields: manualFields,
+    context: { analysis, manual_mode: manualMode, protocol, manual_fields: manualFields,
       operator_turn: operatorTurn, caller_turn: callerTurn,
       prepared_question: activePrepared ? { id: activePrepared.id, protocol_id: activePrepared.protocolId,
         prompt: activePrepared.prompt, number: activePrepared.number, stage: activePrepared.stage } : null,
@@ -383,6 +394,12 @@ function App() {
       ? { value, origin: 'operator', evidence: [], rationale: 'Resumen redactado por el operador.' }
       : unknown() });
   }
+  async function continueManually() {
+    if (locked || !transcript.trim()) return;
+    const next = data ?? emptyData;
+    setManualMode(true); setData(next); setError('');
+    await loadProtocols({ request: { transcript } }, next, compatibleProtocolId(protocol, next), true);
+  }
   const reportedSignals = data?.risks.filter(risk => risk.origin === 'transcript' || risk.origin === 'operator') ?? [];
   const inferredRisks = data?.risks.filter(risk => risk.origin !== 'transcript' && risk.origin !== 'operator') ?? [];
   const clarificationQuestions = checklistQuestions.filter(question => question.status === 'ambiguous');
@@ -394,14 +411,20 @@ function App() {
         <strong>Smart Copilot</strong><span className="header-divider" aria-hidden="true" />
         <h1>Revisión de llamada</h1>
       </div>
-      <div className="header-actions"><span className="badge">Demo · Mock local</span>
+      <div className="header-actions"><span className="badge">{manualMode ? 'Carga manual · Sin consultas IA'
+        : providerInfo?.configured_provider === 'groq' ? 'Groq · ' + providerInfo.configured_model
+        : providerInfo?.configured_provider === 'haiku' ? 'Anthropic · ' + providerInfo.configured_model
+        : providerInfo ? 'Demo · Mock local' : providerInfoError ? 'Proveedor sin conexión' : 'Consultando proveedor…'}</span>
         <button className="secondary" disabled={locked || !transcript.trim()} onClick={() => setCardOpen(true)}>Revisar Carta de Llamada</button>
         <button className="secondary" disabled={locked} onClick={() => { void persistence.refresh(); setRecoveryOpen(true); }}>Recuperar llamada</button>
         <button className="secondary" onClick={() => void newCall()} disabled={locked || !transcript}>Nueva llamada</button>
       </div>
     </header>
     <main>
-      <div className="notice"><strong>Demo local.</strong> Revisá la prioridad: el mock puede omitir gravedad.
+      <div className="notice"><strong>Prototipo.</strong> {manualMode ? 'Carga manual: completá los datos y el checklist.'
+        : providerInfo?.configured_provider === 'mock' ? 'Revisá la prioridad: el mock puede omitir gravedad.'
+        : providerInfo ? 'El modelo puede interpretar mal el relato. Revisá datos, riesgos y prioridad.'
+        : 'Revisá datos, riesgos y prioridad.'}
         <span role="status"> {persistence.booting ? 'Recuperando llamada…' : persistence.saving ? 'Guardando…'
           : persistence.dirty ? 'Cambios sin guardar.' : persistence.current ? 'Guardada en SQLite · '
             + ({ draft: 'Borrador', reviewed: 'Revisada', referred: 'Derivada (simulación)' }[persistence.current.card.status])
@@ -422,26 +445,28 @@ function App() {
         <p className="notice">La llamada cambió: vuelve a borrador y requiere una nueva revisión antes de derivar.</p>}
       <div className="workspace" aria-busy={locked}>
         <section className="panel transcript-panel" aria-labelledby="transcript-title">
-          <div className="section-title"><h2 id="transcript-title">1. Cargar llamada</h2><span>{analysis ? 'Analizada' : 'Pegar y Enter'}</span></div>
+          <div className="section-title"><h2 id="transcript-title">1. Cargar llamada</h2><span>{manualMode ? 'Carga manual' : analysis ? 'Analizada' : 'Pegar y Enter'}</span></div>
           <label className="sr-only" htmlFor="transcript">Transcripción de la llamada</label>
-          <textarea ref={transcriptInput} autoFocus id="transcript" maxLength={50000} value={transcript} readOnly={!!analysis || locked}
+          <textarea ref={transcriptInput} autoFocus id="transcript" maxLength={50000} value={transcript} readOnly={!!analysis || manualMode || locked}
             onChange={event => setTranscript(event.target.value)}
             onKeyDown={event => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !event.repeat) {
                 event.preventDefault();
-                if (!locked && !analysis) void runAnalysis();
+                if (!locked && !analysis && !manualMode) void runAnalysis();
               }
             }}
             placeholder="Pegá el texto de la llamada…&#10;&#10;Operador: ¿Dónde ocurre?&#10;Llamante: …" />
           <div className="transcript-actions">
-            <p className="muted">{analysis
+            <p className="muted">{analysis || manualMode
               ? 'Conversación completa. Podés continuar agregando turnos.'
               : 'Enter para analizar · Shift+Enter para otra línea.'}</p>
-            {!analysis && <button className="primary" disabled={locked || !transcript.trim()} onClick={() => void runAnalysis()}>
+            {!analysis && !manualMode && <button className="primary" disabled={locked || !transcript.trim()} onClick={() => void runAnalysis()}>
               {busy ? 'Analizando…' : 'Analizar llamada'}
             </button>}
             {error && <p className="error" role="alert">{error}</p>}
-            {analysis && <form className="turn-form" onSubmit={event => {
+            {!manualMode && (error || protocolError) && <button className="secondary" disabled={locked}
+              onClick={() => void continueManually()}>Continuar con carga manual</button>}
+            {(analysis || manualMode) && <form className="turn-form" onSubmit={event => {
               event.preventDefault(); void addTurns();
             }}>
               <h3>Continuar conversación</h3>
@@ -483,9 +508,9 @@ function App() {
                 {reviewNotices.map((notice, index) => <p key={index}>{notice}</p>)}
               </div>}
               <div className="review-grid">
-                <ReviewField name="Categoría" field={data.category} options={categories} disabled={locked || !analysis}
+                <ReviewField name="Categoría" field={data.category} options={categories} disabled={locked || (!analysis && !manualMode)}
                   onReview={value => review('category', value)} />
-                <ReviewField name="Prioridad" field={data.priority} options={{ P1: 'P1', P2: 'P2', P3: 'P3', P4: 'P4' }} disabled={locked || !analysis}
+                <ReviewField name="Prioridad" field={data.priority} options={{ P1: 'P1', P2: 'P2', P3: 'P3', P4: 'P4' }} disabled={locked || (!analysis && !manualMode)}
                   onReview={value => review('priority', value)} />
               </div>
               <p className={'priority-summary ' + (data.priority.origin === 'operator' ? 'priority-confirmed'
@@ -518,7 +543,7 @@ function App() {
               {inferredRisks.length ? inferredRisks.map((risk, index) => <FieldView key={index} field={risk} />)
                 : <p className="muted">Sin riesgos inferidos reconocidos. No descarta peligro.</p>}
               <details className="source-details"><summary>Proveedor y limitaciones</summary>
-                <p className="muted">{analysis?.provider} · {analysis?.model}. Desplegá los datos para inspeccionar su evidencia.</p>
+                <p className="muted">{manualMode ? 'Carga manual; sin nueva interpretación automática' : analysis?.provider + ' · ' + analysis?.model}. Desplegá los datos para inspeccionar su evidencia.</p>
                 {analysis?.warnings.map((warning, index) => <p className="muted" key={index}>{warning}</p>)}
               </details>
             </>}
@@ -533,7 +558,7 @@ function App() {
               <p>Acá vas a ver qué preguntar y qué indicar según el tipo de incidente.</p></div> : <>
               {protocolBusy && <p className="muted" role="status">Buscando protocolos…</p>}
               {protocolError && <div className="error" role="alert"><p>{protocolError}</p>
-                <button className="secondary" disabled={locked} onClick={() => analysis && void loadProtocols(analysis, data)}>
+                <button className="secondary" disabled={locked} onClick={() => void loadProtocols({ request: { transcript } }, data)}>
                   Reintentar protocolos</button></div>}
               {protocol && <>
                 {(!protocol.protocol || changingType) ? <fieldset className="incident-types" disabled={locked}>
@@ -544,7 +569,7 @@ function App() {
                     <input type="radio" name="incident-type" value={candidate.id}
                       checked={protocol.protocol?.id === candidate.id}
                       onChange={() => {
-                        if (analysis) void loadProtocols(analysis, data, candidate.id);
+                        void loadProtocols({ request: { transcript } }, data, candidate.id);
                       }} />
                     <span>{!data.category.value && <small>{categories[candidate.category as keyof typeof categories]} · </small>}
                       {candidate.subcategory}</span>

@@ -68,6 +68,7 @@ class ProtocolRequest(Contract):
     request: AnalysisRequest
     data: IncidentData
     protocol_id: NonBlank | None = None
+    manual_only: bool = False
 
     @model_validator(mode="after")
     def validate_evidence(self) -> "ProtocolRequest":

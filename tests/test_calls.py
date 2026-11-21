@@ -37,7 +37,7 @@ class CallWorkflowTests(unittest.TestCase):
         protocol["questions"] = copy.deepcopy(data["questions"])
         self.snapshot = {"request": analysis["request"], "data": data,
                          "operator_notes": "Observación de prueba",
-                         "context": {"analysis": analysis, "protocol": protocol,
+                         "context": {"analysis": analysis, "manual_mode": False, "protocol": protocol,
                                      "manual_fields": ["priority"], "operator_turn": "",
                                      "caller_turn": "", "prepared_question": None,
                                      "question_update": None, "update_notices": []}}

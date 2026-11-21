@@ -1,6 +1,7 @@
 """API de extracción mock parcial, salud y contratos."""
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 
@@ -18,6 +19,10 @@ from backend.domain.models import (
     AnalysisRequest, AnalysisResult, CallCard, Category, ErrorResponse, HealthResponse,
 )
 from backend.providers.base import ExtractionProvider, ProviderError
+from backend.providers.config import ProviderSettings
+from backend.providers.haiku import HaikuGateway
+from backend.providers.groq import GroqGateway
+from backend.providers.llm import LLMExtractionProvider, LLMChecklistEvaluator
 from backend.providers.mock import MockExtractionProvider
 from backend.providers.checklist_mock import MockChecklistEvaluator
 from backend.protocols.catalog import ProtocolCatalog
@@ -27,22 +32,33 @@ from backend.protocols.models import (
 )
 
 
-def get_provider() -> ExtractionProvider:
-    return MockExtractionProvider()
+def get_provider(request: Request) -> ExtractionProvider:
+    return request.app.state.provider
 
 
 def create_app(frontend_dir: Path | None = None, db_path: Path | None = None) -> FastAPI:
-    if os.getenv("LLM_PROVIDER", "mock") != "mock":
-        raise RuntimeError("Por ahora solo está implementado LLM_PROVIDER=mock.")
+    settings = ProviderSettings.from_env()
+    gateway = (GroqGateway(settings) if settings.provider == "groq" else
+               HaikuGateway(settings) if settings.provider == "haiku" else None)
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        try:
+            yield
+        finally:
+            if gateway:
+                gateway.close()
 
     app = FastAPI(
         title="Smart Copilot",
-        version="0.5.0",
+        version="0.6.0", lifespan=lifespan,
         description="Panel de operador, cartas persistidas y derivación CAD simulada.",
     )
 
     catalog = ProtocolCatalog()
-    engine = ProtocolEngine(catalog, MockChecklistEvaluator())
+    app.state.provider = LLMExtractionProvider(gateway) if gateway else MockExtractionProvider()
+    evaluator = LLMChecklistEvaluator(gateway) if gateway else MockChecklistEvaluator()
+    engine = ProtocolEngine(catalog, evaluator)
     store = CallStore(db_path or Path(os.getenv("CALLS_DB_PATH", "data/private/calls.sqlite3")), catalog)
     app.include_router(call_routes(store))
 
@@ -76,6 +92,7 @@ def create_app(frontend_dir: Path | None = None, db_path: Path | None = None) ->
     async def provider_error(_request: Request, error: ProviderError) -> JSONResponse:
         status, message = {
             "provider_timeout": (504, "El proveedor excedió el tiempo de espera."),
+            "provider_rate_limited": (429, "Se alcanzó el límite del proveedor. Esperá antes de reintentar o continuá manualmente."),
             "provider_unavailable": (503, "El proveedor no está disponible."),
             "invalid_provider_output": (502, "El proveedor devolvió un resultado inválido."),
         }[error.code]
@@ -91,13 +108,18 @@ def create_app(frontend_dir: Path | None = None, db_path: Path | None = None) ->
     def root() -> FileResponse | dict[str, str]:
         if (panel_dir / "index.html").is_file():
             return FileResponse(panel_dir / "index.html", headers={"Cache-Control": "no-store"})
-        return {"service": "smart-copilot", "stage": "mock_analysis",
+        return {"service": "smart-copilot", "stage": "llm_analysis" if gateway else "mock_analysis",
                 "health": "/health", "docs": "/docs", "contracts": "/contracts",
                 "analyze": "/api/analyze"}
 
     @app.get("/health", response_model=HealthResponse, tags=["service"])
     def health() -> HealthResponse:
-        return HealthResponse()
+        return HealthResponse(stage="llm_analysis" if gateway else "mock_analysis", configured_provider=settings.provider,
+                              configured_model=settings.model if gateway else None)
+
+    @app.get("/api/config", response_model=HealthResponse, tags=["service"])
+    def provider_config() -> HealthResponse:
+        return health()
 
     @app.get("/contracts", tags=["contracts"])
     def contracts() -> dict:

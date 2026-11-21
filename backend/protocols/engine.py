@@ -1,6 +1,6 @@
 """Selección de protocolo y checklist; independiente del mock y del futuro LLM."""
 
-from backend.domain.models import IncidentData
+from backend.domain.models import IncidentData, ProtocolQuestion
 from backend.protocols.catalog import ProtocolCatalog, canonical
 from pydantic import ValidationError
 
@@ -50,7 +50,12 @@ class ProtocolEngine:
             transcript=request.request.transcript, questions=protocol.questions,
         )
         try:
-            output = self.evaluator.evaluate(evaluation_request.model_copy(deep=True))
+            if request.manual_only:
+                output = ChecklistEvaluationResult(questions=[
+                    ProtocolQuestion(id=q.id, text=q.text) for q in protocol.questions])
+                warnings.append("Carga manual: checklist sin evaluación automática; completar y revisar respuestas.")
+            else:
+                output = self.evaluator.evaluate(evaluation_request.model_copy(deep=True))
             payload = output.model_dump() if isinstance(output, ChecklistEvaluationResult) else output
             evaluated = ChecklistEvaluationResult.model_validate(payload)
             evaluated.validate_against(evaluation_request)

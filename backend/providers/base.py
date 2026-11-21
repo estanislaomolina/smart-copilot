@@ -18,7 +18,7 @@ class ProviderError(Exception):
 
     def __init__(
         self,
-        code: Literal["provider_unavailable", "provider_timeout", "invalid_provider_output"],
+        code: Literal["provider_unavailable", "provider_timeout", "invalid_provider_output", "provider_rate_limited"],
         message: str,
         *,
         retryable: bool = False,
