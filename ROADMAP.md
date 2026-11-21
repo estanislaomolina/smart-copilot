@@ -100,11 +100,11 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 
 Rama sugerida: `feat/evaluation`.
 
-Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y checklist por separado, conserva resultados parciales y genera entradas para revisión humana. Hay ocho casos reservados con expectativas y hash versionados; solo se validó su estructura, sin ejecutarlos ni usarlos para ajustar el sistema. Las verificaciones con Mock continúan usando los dos casos conocidos. Ver [protocolo y límites](docs/evaluation.md). Falta ejecutar las tandas reales y revisar las salidas; no se declara completo el hito.
+Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y checklist por separado, conserva resultados parciales y genera entradas para revisión humana. Hay ocho casos reservados con expectativas y hash versionados. Primera tanda real: EVAL-01 terminó en salida inválida tras una solicitud de extracción, sin reintentos; no se inició el checklist. Los otros siete casos no se seleccionaron. No se cambió el sistema a partir del resultado. Ver [primera tanda](docs/evaluation-results.md). Las verificaciones con Mock continúan usando los dos casos conocidos. Ver [protocolo y límites](docs/evaluation.md). Falta ejecutar las tandas reales y revisar las salidas; no se declara completo el hito.
 
 - [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
 - [ ] Tras el primer extractor, decidir qué casos sintéticos adicionales aportan cobertura y revisar sus expectativas antes de usarlos.
-- [x] Definir y versionar la separación entre desarrollo y evaluación; conjunto reservado v1 sin ejecutar.
+- [x] Definir y versionar la separación entre desarrollo y evaluación; conjunto reservado v1 fijado antes de la primera tanda.
 - [x] Añadir ocho casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones; expectativas previas y hash versionado.
 - [x] Mantener expectativas fuera de las entradas del proveedor en el comando de evaluación; verificación de esa separación sin red.
 - [ ] Evaluar ubicación, categoría, prioridad, checklist y afirmaciones sin respaldo.

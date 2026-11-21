@@ -4,7 +4,7 @@
 
 - data/raw/dataset_challenge_soflex.csv: 30 casos originales ya conocidos durante desarrollo. Se conservan intactos y su corrida queda para el final; no sirven como evaluación independiente.
 - data/evaluation/development.json: dos casos conocidos utilizados para comprobar el comando y analizar fallos.
-- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. No se ejecutaron durante este incremento ni se usaron para modificar prompts o reglas.
+- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. Se prepararon sin ejecutar ni usarse para modificar prompts o reglas. Posteriormente se inició una primera tanda con un caso, que falló en extracción; los otros siete siguen sin ejecutar. Ver [resultados](evaluation-results.md).
 - data/synthetic/development.json: ocho especificaciones previas apartadas; no se incorporaron automáticamente a esta evaluación.
 
 Los casos reservados cubren las seis categorías, presencia frente a atrapamiento, respuestas descriptivas, negativas, altura ausente o incierta, corrección completa de dirección, información insuficiente e instrucciones no confiables dentro del relato. Las preguntas esperadas existen en el catálogo general. Las notas por caso orientan la revisión, sin llegar al proveedor.
@@ -35,7 +35,7 @@ Ejemplo para una futura consulta real de un caso reservado, cuando se decida ini
 python3 scripts/evaluate.py --provider groq --cases data/evaluation/holdout-v1.json --case EVAL-01 --limit 1 --output artifacts/evaluation/groq-eval-01.json
 ~~~
 
-GROQ_API_KEY debe estar exportada en el entorno; el comando no carga .env. No se ejecutó este ejemplo. Solo se envían transcripción y preguntas del protocolo seleccionado: nunca expectativas, IDs de casos ni notas de revisión. La selección del protocolo mantiene el comportamiento del producto, sin forzar la categoría esperada. Si faltan preguntas esperadas, revisar también el protocolo seleccionado antes de atribuir el fallo al intérprete del checklist.
+GROQ_API_KEY debe estar exportada en el entorno; el comando no carga .env. La primera tanda se ejecutó con esta selección dentro del contenedor y se registró por separado. Solo se envían transcripción y preguntas del protocolo seleccionado: nunca expectativas, IDs de casos ni notas de revisión. La selección del protocolo mantiene el comportamiento del producto, sin forzar la categoría esperada. Si faltan preguntas esperadas, revisar también el protocolo seleccionado antes de atribuir el fallo al intérprete del checklist.
 
 La evaluación desactiva los reintentos de Groq, aunque el entorno del producto configure uno. Cada caso hace como máximo una extracción y una consulta de checklist; si no se selecciona un protocolo, no hay segunda consulta. El máximo por defecto es cuatro solicitudes. Un 429 interrumpe la corrida y omite el resto. No hay sustitución automática por Mock. Esperar y decidir una nueva tanda fuera del comando, sin bucles de reintentos.
 
@@ -81,3 +81,7 @@ Se ejecutaron únicamente los dos casos conocidos con Mock, además de una selec
 Se verificaron tiempos y conteos con un reloj y transporte simulados, preservación parcial ante fallo del checklist y ausencia de certificación semántica automática.
 Los ocho casos reservados se validaron estructuralmente y contra las preguntas del catálogo, sin ejecutar sus transcripciones con ningún proveedor.
 No se hicieron consultas a Groq, no se ejecutó el CSV original y no se midió latencia real del LLM en este incremento.
+
+## Primera tanda posterior
+
+Se ejecutó EVAL-01 con Groq, una solicitud y cero reintentos. Falló la extracción por salida inválida y no se inició el checklist. Los siete casos restantes no se seleccionaron. No se cambió el sistema ni las expectativas ni se repitió el caso. Ver [configuración, tiempos y limitaciones](evaluation-results.md).
