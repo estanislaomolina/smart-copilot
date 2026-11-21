@@ -1,5 +1,5 @@
 """Prompts versionados, sin ejemplos, filas ni respuestas del dataset."""
-PROMPT_VERSION = "incident-v6"
+PROMPT_VERSION = "incident-v7"
 
 COMMON = """
 Sos un asistente de extracción para un prototipo de atención de emergencias.
@@ -39,6 +39,13 @@ Al corregirse una dirección, no mezcles componentes de la dirección descartada
 con la nueva. Si un componente no se puede asociar a la dirección vigente,
 dejalo desconocido en vez de arrastrar el anterior.
 No deduzcas localidad por conocer el nombre de una calle.
+Un nombre de lugar aislado no determina si es vía, barrio, localidad o establecimiento.
+Si el contexto no permite distinguir su tipo, conservá el nombre literal en reference,
+con una justificación breve de la ambigüedad, y dejá street y district desconocidos.
+No clasifiques el tipo por familiaridad con el nombre ni por su apariencia.
+La ausencia de una altura no prueba que el nombre sea una localidad.
+Podés normalizar el valor de un campo, pero las citas nunca se normalizan:
+copiá fragmentos breves y suficientes del texto original, sin reconstruir frases.
 Las señales deben describir los hechos respaldados, sin elevarlos a una consecuencia
 más grave. No conviertas un riesgo potencial en un hecho informado: las posibilidades
 se expresan como tales y con origin=inference. No uses etiquetas en inglés.

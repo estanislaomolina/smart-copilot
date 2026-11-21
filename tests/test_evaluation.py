@@ -135,6 +135,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result["configuration"]["max_retries"], 0)
         self.assertEqual(result["results"][0]["request_attempts"], {"extraction": 1, "checklist": 0})
         self.assertEqual(result["not_selected"], 0)
+        self.assertEqual(result["summary"]["attempt_diagnostics"]["attempts_recorded"], 1)
 
 
     def test_merge_keeps_errors_and_rejects_duplicate_cases_or_different_configs(self):
@@ -165,6 +166,30 @@ class EvaluationTests(unittest.TestCase):
             b.write_text(json.dumps({**common, "prompt_version": "v2", "results": [passed]}))
             with self.assertRaisesRegex(ValueError, "No se mezclan"):
                 merge_reports([a, b])
+
+
+    def test_extraction_only_skips_protocol_and_reports_recovered_validation(self):
+        events = []
+        class Provider:
+            async def analyze(self, request):
+                events.extend([
+                    {"schema": "ExtractedIncident", "attempt": 1, "outcome": "local_validation",
+                     "issues": [{"type": "evidence_not_found", "field": "summary"}]},
+                    {"schema": "ExtractedIncident", "attempt": 2, "outcome": "valid", "issues": []}])
+                return AnalysisResult(request=request, data=IncidentData(), provider="mock")
+        class Engine:
+            def apply(self, request):
+                raise AssertionError("No debe ejecutar protocolos")
+        suite = Suite(split="development", description="Prueba local.", cases=[
+            Case(id="repair", transcript="Llamante: No sé.", fields={"priority": None})])
+        results = asyncio.run(evaluate(suite, Provider(), Engine(), lambda: len(events),
+                                       attempt_events=events, extract_only=True))
+        self.assertEqual(results[0]["request_attempts"]["extraction"], 2)
+        self.assertIsNone(results[0]["timings_seconds"]["checklist"])
+        stats = summarize(results)["attempt_diagnostics"]
+        self.assertEqual(stats["stages_recovered_after_retry"], 1)
+        self.assertEqual(stats["first_attempt_validation_failures"], 1)
+        self.assertEqual(stats["outcomes"], {"local_validation": 1, "valid": 1})
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ python3 scripts/evaluate.py --provider groq --cases data/evaluation/holdout-v1.j
 
 GROQ_API_KEY debe estar exportada en el entorno; el comando no carga .env. La primera tanda se ejecutó con esta selección dentro del contenedor y se registró por separado. Solo se envían transcripción y preguntas del protocolo seleccionado: nunca expectativas, IDs de casos ni notas de revisión. La selección del protocolo mantiene el comportamiento del producto, sin forzar la categoría esperada. Si faltan preguntas esperadas, revisar también el protocolo seleccionado antes de atribuir el fallo al intérprete del checklist.
 
-La evaluación desactiva los reintentos de Groq, aunque el entorno del producto configure uno. Cada caso hace como máximo una extracción y una consulta de checklist; si no se selecciona un protocolo, no hay segunda consulta. El máximo por defecto es cuatro solicitudes. Un 429 interrumpe la corrida y omite el resto. No hay sustitución automática por Mock. Esperar y decidir una nueva tanda fuera del comando, sin bucles de reintentos.
+La evaluación desactiva por defecto los reintentos de Groq, aunque el entorno del producto configure uno. --max-retries 1 habilita un único intento adicional por etapa y puede elevar el máximo de dos a cuatro solicitudes por caso. Cada caso hace como máximo una extracción y una consulta de checklist; si no se selecciona un protocolo, no hay segunda consulta. El máximo por defecto es cuatro solicitudes. Un 429 interrumpe la corrida y omite el resto. No hay sustitución automática por Mock. Esperar y decidir una nueva tanda fuera del comando, sin bucles de reintentos.
 
 No se modificó la política de reintentos de la aplicación.
 
@@ -45,7 +45,7 @@ No se modificó la política de reintentos de la aplicación.
 
 - Comparaciones literales por campo, estado del checklist y texto de respuesta cuando se especificó. Solo las respuestas ignoran mayúsculas y espacios exteriores; no se equiparan paráfrasis.
 - Casos con campos de ubicación comparados y cuántos coinciden en todos esos campos. Si falla la extracción, no entra en ese denominador; el error se informa aparte.
-- Errores por etapa/código y cantidad de salidas inválidas terminales. No se observan ni contabilizan generaciones intermedias rechazadas dentro del proveedor; en el modo Groq del evaluador los reintentos están desactivados.
+- Errores por etapa/código y cantidad de salidas inválidas terminales. Los reportes nuevos incluyen diagnósticos de intentos intermedios del adaptador Groq y recuperaciones; los reportes históricos sin esos eventos no permiten reconstruirlos. Los reintentos están desactivados por defecto.
 - Tiempo de extracción, checklist y total por caso, con mínimo, mediana, máximo y número de muestras. Incluye trabajo local de cada etapa y espera por el transporte; no es latencia aislada del modelo ni tiempo percibido en el navegador. Las etapas fallidas también se miden y las no iniciadas quedan null. El total abarca el análisis de un caso, sin carga de archivos, creación del cliente, escritura del reporte, persistencia ni comunicación navegador–API.
 - Solicitudes de transporte observadas por etapa y reintentos derivados de esas cuentas. Mock registra cero; un proveedor sin contador registra null. No se inventan intentos ni consumo.
 - Proveedor, modelo, configuración, prompt, hash del conjunto e IDs seleccionados.
@@ -106,3 +106,9 @@ Cada fuente se identifica por nombre y hash. No se consultan proveedores ni se i
 Se completaron los ocho casos con doce solicitudes, sin reintentos y con pausas; no hubo respuestas 429. Se conservan tres errores, dos casos con diferencias y tres casos coincidentes con las comprobaciones.
 La inspección asistida del agente abarcó las treinta entradas utilizables: veintiséis consideradas respaldadas y cuatro inciertas. La revisión humana sigue pendiente y no se afirma una tasa de alucinaciones ni precisión general.
 Ver [resultados, límites y siguientes decisiones](evaluation-results.md) y [resumen versionado](evaluation-results-v1.json). Los prompts, las reglas, el catálogo y las expectativas quedaron sin cambios durante esta corrida.
+
+## incident-v7 y nuevo conjunto reservado
+
+Los ocho casos de la línea base pasan a desarrollo para cambios posteriores, según splits.json. No se borran sus resultados ni se reescriben sus expectativas.
+holdout-v2 contiene dos casos nuevos congelados antes de ejecutar proveedores. Ver [diagnóstico, política de ubicación y medición de correcciones](llm-reliability.md).
+--extract-only limita la medición a extracción. --max-retries 1 mide el presupuesto del producto; la configuración y el modo quedan registrados y no se consolidan con corridas distintas.

@@ -154,11 +154,30 @@ def summarize(results: list[dict]) -> dict:
     locations = [[c for c in r.get("checks", []) if c["target"].startswith("location.")]
                  for r in results]
     locations = [checks for checks in locations if checks]
+    diagnostics = None
+    observed = [r for r in results if r.get("attempt_diagnostics") is not None]
+    if observed:
+        events = [event for row in observed for event in row["attempt_diagnostics"]]
+        outcomes = {}
+        recovered = 0
+        for event in events:
+            outcomes[event["outcome"]] = outcomes.get(event["outcome"], 0) + 1
+        for row in observed:
+            by_schema = {}
+            for event in row["attempt_diagnostics"]:
+                by_schema.setdefault(event["schema"], []).append(event)
+            recovered += sum(len(group) > 1 and group[-1]["outcome"] == "valid"
+                             for group in by_schema.values())
+        diagnostics = {"cases_observed": len(observed), "attempts_recorded": len(events),
+                       "outcomes": outcomes, "stages_recovered_after_retry": recovered,
+                       "first_attempt_validation_failures": sum(
+                           e["attempt"] == 1 and e["outcome"] in ("local_validation", "remote_schema")
+                           for e in events)}
     return {"literal_comparisons": groups,
             "location_cases": {"with_compared_fields": len(locations),
                                "all_compared_fields_matched": sum(all(c["passed"] for c in checks)
                                                                  for checks in locations)},
-            "errors_by_code": errors,
+            "errors_by_code": errors, "attempt_diagnostics": diagnostics,
             "terminal_invalid_outputs": errors.get("invalid_provider_output", 0),
             "latency_seconds": latency, "human_review": summarize_review(results)}
 
@@ -166,6 +185,8 @@ def summarize(results: list[dict]) -> dict:
 async def evaluate(
     suite: Suite, provider: ExtractionProvider, engine: ProtocolEngine,
     request_count: Callable[[], int] | None = None,
+    attempt_events: list[dict] | None = None,
+    extract_only: bool = False,
 ) -> list[dict]:
     results = []
     stopped = False
@@ -179,6 +200,7 @@ async def evaluate(
         stage = "extraction"
         analysis, protocol = None, None
         result = {"id": case.id}
+        event_start = len(attempt_events) if attempt_events is not None else 0
         try:
             stage_start = time.monotonic()
             before = request_count() if request_count else None
@@ -189,14 +211,15 @@ async def evaluate(
             finally:
                 timings[stage] = round(time.monotonic() - stage_start, 6)
                 attempts[stage] = request_count() - before if request_count else None
-            stage = "checklist"
-            stage_start = time.monotonic()
-            before = request_count() if request_count else None
-            try:
-                protocol = engine.apply(ProtocolRequest(request=analysis.request, data=analysis.data))
-            finally:
-                timings[stage] = round(time.monotonic() - stage_start, 6)
-                attempts[stage] = request_count() - before if request_count else None
+            if not extract_only:
+                stage = "checklist"
+                stage_start = time.monotonic()
+                before = request_count() if request_count else None
+                try:
+                    protocol = engine.apply(ProtocolRequest(request=analysis.request, data=analysis.data))
+                finally:
+                    timings[stage] = round(time.monotonic() - stage_start, 6)
+                    attempts[stage] = request_count() - before if request_count else None
             checks = compare(case, analysis.data, protocol)
             result.update(status="passed" if all(c["passed"] for c in checks) else "failed", checks=checks)
         except ProviderError as error:
@@ -205,6 +228,7 @@ async def evaluate(
             stopped = error.code == "provider_rate_limited"
         timings["total"] = round(time.monotonic() - start, 6)
         result.update(timings_seconds=timings, request_attempts=attempts,
+                      attempt_diagnostics=(attempt_events[event_start:] if attempt_events is not None else None),
                       retries={key: max(0, value - 1) if value is not None else None
                                for key, value in attempts.items()},
                       selected_protocol=protocol.protocol.id if protocol and protocol.protocol else None,
@@ -218,13 +242,14 @@ async def evaluate(
 
 def merge_reports(paths: list[Path]) -> dict:
     """Consolidar tandas sin ejecutar proveedores ni ocultar errores previos."""
-    common_keys = ("cases_sha256", "split", "provider", "model", "prompt_version", "configuration")
+    common_keys = ("cases_sha256", "split", "provider", "model", "prompt_version", "configuration", "evaluation_mode")
     first = None
     results, sources = [], []
     seen_ids, seen_hashes = set(), set()
     for path in paths:
         raw = path.read_bytes()
         report = json.loads(raw)
+        report.setdefault("evaluation_mode", "full")
         digest = hashlib.sha256(raw).hexdigest()
         if report.get("report_version") != 2 or not isinstance(report.get("results"), list):
             raise ValueError("Se requieren reportes v2 con resultados.")
@@ -274,6 +299,9 @@ def main() -> int:
                         help="Contar veredictos de un reporte revisado; no ejecuta proveedores.")
     parser.add_argument("--merge-reports", type=Path, nargs="+",
                         help="Consolidar tandas de igual configuración; no ejecuta proveedores.")
+    parser.add_argument("--max-retries", type=int, choices=(0, 1), default=0,
+                        help="Cero por defecto; uno permite medir la corrección acotada del producto.")
+    parser.add_argument("--extract-only", action="store_true", help="Medir solo extracción, sin consultar el checklist.")
     args = parser.parse_args()
     if args.merge_reports:
         if args.summarize_review:
@@ -305,6 +333,7 @@ def main() -> int:
     selected = suite.model_copy(update={"cases": available[:args.limit]})
     gateway = None
     request_attempts = [0]
+    attempt_events = []
     def count_request(_request):
         request_attempts[0] += 1
     model = None
@@ -317,16 +346,16 @@ def main() -> int:
         # La selección explícita del CLI tiene precedencia; las credenciales siguen locales.
         os.environ["LLM_PROVIDER"] = "groq"
         import httpx
-        # Evaluación conservadora: un solo intento por etapa, sin corrección automática.
-        settings = ProviderSettings.from_env().model_copy(update={"retries": 0})
+        # Corrección solo mediante la opción explícita; el presupuesto sigue siendo acotado.
+        settings = ProviderSettings.from_env().model_copy(update={"retries": args.max_retries})
         client = httpx.Client(timeout=httpx.Timeout(settings.timeout, connect=min(5, settings.timeout)),
                               follow_redirects=False, event_hooks={"request": [count_request]})
-        gateway = GroqGateway(settings, client)
+        gateway = GroqGateway(settings, client, on_attempt=attempt_events.append)
         model = settings.model
         provider, evaluator = LLMExtractionProvider(gateway), LLMChecklistEvaluator(gateway)
     try:
         results = asyncio.run(evaluate(selected, provider, ProtocolEngine(ProtocolCatalog(), evaluator),
-                                       request_count=lambda: request_attempts[0]))
+                                       request_count=lambda: request_attempts[0], attempt_events=attempt_events, extract_only=args.extract_only))
     finally:
         if gateway:
             gateway.close()
@@ -334,6 +363,7 @@ def main() -> int:
               for status in ("passed", "failed", "error", "skipped")}
     report = {
         "report_version": 2,
+        "evaluation_mode": "extraction_only" if args.extract_only else "full",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "selected_case_ids": [case.id for case in selected.cases],
         "not_selected": len(suite.cases) - len(selected.cases),
