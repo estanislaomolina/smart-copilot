@@ -215,6 +215,52 @@ async def evaluate(
     return results
 
 
+
+def merge_reports(paths: list[Path]) -> dict:
+    """Consolidar tandas sin ejecutar proveedores ni ocultar errores previos."""
+    common_keys = ("cases_sha256", "split", "provider", "model", "prompt_version", "configuration")
+    first = None
+    results, sources = [], []
+    seen_ids, seen_hashes = set(), set()
+    for path in paths:
+        raw = path.read_bytes()
+        report = json.loads(raw)
+        digest = hashlib.sha256(raw).hexdigest()
+        if report.get("report_version") != 2 or not isinstance(report.get("results"), list):
+            raise ValueError("Se requieren reportes v2 con resultados.")
+        if digest in seen_hashes:
+            raise ValueError("No se puede contar dos veces el mismo reporte.")
+        if any(key not in report for key in common_keys):
+            raise ValueError("Falta configuración para identificar la corrida.")
+        if first is None:
+            first = report
+        elif any(report[key] != first[key] for key in common_keys):
+            raise ValueError("No se mezclan conjuntos, proveedores, prompts o configuraciones diferentes.")
+        for result in report["results"]:
+            if result.get("status") not in ("passed", "failed", "error", "skipped"):
+                raise ValueError("Estado de resultado no permitido.")
+            case_id = result.get("id")
+            if not isinstance(case_id, str) or not case_id:
+                raise ValueError("Resultado sin ID de caso.")
+            if case_id in seen_ids:
+                raise ValueError("Hay casos repetidos: comparar sus ejecuciones por separado.")
+            seen_ids.add(case_id)
+            results.append(result)
+        seen_hashes.add(digest)
+        sources.append({"name": path.name, "sha256": digest})
+    if first is None:
+        raise ValueError("Se necesita al menos un reporte.")
+    counts = {status: sum(r["status"] == status for r in results)
+              for status in ("passed", "failed", "error", "skipped")}
+    return {"report_version": 2, "mode": "merged",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            **{key: first[key] for key in common_keys},
+            "description": first.get("description"),
+            "comparison": first.get("comparison"),
+            "source_reports": sources, "selected_case_ids": [r["id"] for r in results],
+            "usage": None, "usage_note": "No se dispone de consumo; no se estima.",
+            "counts": counts, "summary": summarize(results), "results": results}
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cases", type=Path, default=ROOT / "data/evaluation/development.json")
@@ -226,7 +272,20 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=2, help="Máximo de casos por corrida (por defecto 2).")
     parser.add_argument("--summarize-review", type=Path,
                         help="Contar veredictos de un reporte revisado; no ejecuta proveedores.")
+    parser.add_argument("--merge-reports", type=Path, nargs="+",
+                        help="Consolidar tandas de igual configuración; no ejecuta proveedores.")
     args = parser.parse_args()
+    if args.merge_reports:
+        if args.summarize_review:
+            parser.error("Elegí consolidación o resumen de revisión.")
+        if args.output.resolve() in {path.resolve() for path in args.merge_reports}:
+            parser.error("El reporte consolidado no puede sobrescribir una entrada.")
+        report = merge_reports(args.merge_reports)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(report["counts"], ensure_ascii=False))
+        print(f"Reporte consolidado: {args.output}")
+        return 1 if any(report["counts"][key] for key in ("failed", "error", "skipped")) else 0
     if args.summarize_review:
         report = json.loads(args.summarize_review.read_text(encoding="utf-8"))
         print(json.dumps(summarize_review(report["results"]), ensure_ascii=False, indent=2))

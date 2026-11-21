@@ -14,7 +14,7 @@ import unittest
 from backend.domain.models import AnalysisResult, IncidentData
 from backend.protocols.models import ProtocolResult
 from backend.providers.base import ProviderError
-from scripts.evaluate import Case, Suite, compare, evaluate, summarize, summarize_review, main
+from scripts.evaluate import Case, Suite, compare, evaluate, summarize, summarize_review, main, merge_reports
 
 
 class EvaluationTests(unittest.TestCase):
@@ -135,6 +135,36 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result["configuration"]["max_retries"], 0)
         self.assertEqual(result["results"][0]["request_attempts"], {"extraction": 1, "checklist": 0})
         self.assertEqual(result["not_selected"], 0)
+
+
+    def test_merge_keeps_errors_and_rejects_duplicate_cases_or_different_configs(self):
+        common = {"report_version": 2, "cases_sha256": "frozen", "split": "evaluation",
+                  "provider": "groq", "model": "test", "prompt_version": "v1", "configuration": {}}
+        error = {"id": "one", "status": "error", "code": "invalid_provider_output",
+                 "timings_seconds": {"extraction": 4, "checklist": None, "total": 4}}
+        passed = {"id": "two", "status": "passed", "checks": [],
+                  "timings_seconds": {"extraction": 3, "checklist": 2, "total": 5}}
+        with TemporaryDirectory() as folder:
+            a, b = Path(folder) / "a.json", Path(folder) / "b.json"
+            a.write_text(json.dumps({**common, "results": [error]}))
+            b.write_text(json.dumps({**common, "results": [passed]}))
+            combined = merge_reports([a, b])
+            self.assertEqual(combined["counts"], {"passed": 1, "failed": 0, "error": 1, "skipped": 0})
+            self.assertEqual(combined["summary"]["terminal_invalid_outputs"], 1)
+            self.assertEqual(combined["summary"]["latency_seconds"]["checklist"]["samples"], 1)
+            out = Path(folder) / "merged.json"
+            with patch("sys.argv", ["evaluate.py", "--merge-reports", str(a), str(b),
+                                    "--output", str(out)]), redirect_stdout(io.StringIO()):
+                self.assertEqual(main(), 1)  # El error previo sigue contando.
+            self.assertEqual(json.loads(out.read_text())["counts"], combined["counts"])
+            with self.assertRaisesRegex(ValueError, "dos veces"):
+                merge_reports([a, a])
+            b.write_text(json.dumps({**common, "results": [error], "created_at": "other-run"}))
+            with self.assertRaisesRegex(ValueError, "casos repetidos"):
+                merge_reports([a, b])
+            b.write_text(json.dumps({**common, "prompt_version": "v2", "results": [passed]}))
+            with self.assertRaisesRegex(ValueError, "No se mezclan"):
+                merge_reports([a, b])
 
 
 if __name__ == "__main__":

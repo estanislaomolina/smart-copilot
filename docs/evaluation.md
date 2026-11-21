@@ -89,3 +89,14 @@ Se ejecutó EVAL-01 con Groq, una solicitud y cero reintentos. Falló la extracc
 ## Segunda tanda posterior
 
 Se ejecutó EVAL-02 con Groq: dos solicitudes, cero reintentos, siete coincidencias literales y unos cinco segundos en total. Las entradas conservan su estado pendiente de revisión humana. No se repitió el caso fallido ni se cambiaron prompts, reglas o expectativas. Ver [resultados acumulados](evaluation-results.md).
+
+## Consolidar tandas sin repetir consultas
+
+El comando --merge-reports permite consolidar reportes v2 con el mismo conjunto, proveedor, modelo, prompt y configuración:
+
+~~~bash
+python3 scripts/evaluate.py --merge-reports artifacts/evaluation/groq-eval-[0-9][0-9].json --output artifacts/evaluation/groq-holdout-summary.json
+~~~
+
+Seleccionar solo los reportes de resultados, sin archivos de diagnóstico ni copias revisadas del mismo caso. El comando conserva fallos previos y los tiempos de etapas no iniciadas quedan null. Rechaza reportes duplicados, IDs repetidos o configuraciones distintas; las ejecuciones repetidas deben compararse por separado, sin reemplazar la primera.
+Cada fuente se identifica por nombre y hash. No se consultan proveedores ni se incluyen claves o cuerpos remotos. El código de salida sigue siendo 1 si hay diferencias, errores u omisiones.
