@@ -4,7 +4,7 @@
 
 - data/raw/dataset_challenge_soflex.csv: 30 casos originales ya conocidos durante desarrollo. Se conservan intactos y su corrida queda para el final; no sirven como evaluación independiente.
 - data/evaluation/development.json: dos casos conocidos utilizados para comprobar el comando y analizar fallos.
-- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. Se prepararon sin ejecutar ni usarse para modificar prompts o reglas. Posteriormente se inició una primera tanda con un caso, que falló en extracción; los otros siete siguen sin ejecutar. Ver [resultados](evaluation-results.md).
+- data/evaluation/holdout-v1.json: ocho relatos sintéticos propios con expectativas definidas antes de ejecutar proveedores. Su hash queda en holdout-v1.sha256. Se prepararon sin ejecutar ni usarse para modificar prompts o reglas. Posteriormente se intentaron dos casos: uno falló en extracción y otro completó extracción y checklist. Los otros seis siguen sin ejecutar. Ver [resultados](evaluation-results.md).
 - data/synthetic/development.json: ocho especificaciones previas apartadas; no se incorporaron automáticamente a esta evaluación.
 
 Los casos reservados cubren las seis categorías, presencia frente a atrapamiento, respuestas descriptivas, negativas, altura ausente o incierta, corrección completa de dirección, información insuficiente e instrucciones no confiables dentro del relato. Las preguntas esperadas existen en el catálogo general. Las notas por caso orientan la revisión, sin llegar al proveedor.
@@ -85,3 +85,7 @@ No se hicieron consultas a Groq, no se ejecutó el CSV original y no se midió l
 ## Primera tanda posterior
 
 Se ejecutó EVAL-01 con Groq, una solicitud y cero reintentos. Falló la extracción por salida inválida y no se inició el checklist. Los siete casos restantes no se seleccionaron. No se cambió el sistema ni las expectativas ni se repitió el caso. Ver [configuración, tiempos y limitaciones](evaluation-results.md).
+
+## Segunda tanda posterior
+
+Se ejecutó EVAL-02 con Groq: dos solicitudes, cero reintentos, siete coincidencias literales y unos cinco segundos en total. Las entradas conservan su estado pendiente de revisión humana. No se repitió el caso fallido ni se cambiaron prompts, reglas o expectativas. Ver [resultados acumulados](evaluation-results.md).
