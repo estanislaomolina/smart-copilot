@@ -24,6 +24,7 @@ class QuestionUpdateState(Contract):
 
 class CallContext(Contract):
     analysis: AnalysisResult | None = None
+    manual_mode: bool = False
     protocol: ProtocolResult | None = None
     manual_fields: list[Literal[
         "category", "priority", "location.street", "location.number",

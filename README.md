@@ -4,7 +4,7 @@ Prototipo de asistencia para operadores de emergencias a partir de transcripcion
 
 ## Estado
 
-Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay panel para analizar texto, inspeccionar evidencia, corregir categoría/prioridad y seleccionar protocolos. La conversación admite nuevos turnos y actualización del análisis conservando decisiones manuales. La guía muestra instrucciones, próxima pregunta y checklist editable. La Carta de Llamada ya se guarda en SQLite, se recupera al recargar, admite revisión explícita y derivación simulada. Categoría, prioridad y cada campo de ubicación tienen revisión individual. La integración LLM con Haiku se hará después de completar ese flujo.
+Mock de demostración con extracción parcial, riesgos/prioridad y motor de protocolos separados. Hay panel para analizar texto, inspeccionar evidencia, corregir categoría/prioridad y seleccionar protocolos. La conversación admite nuevos turnos y actualización del análisis conservando decisiones manuales. La guía muestra instrucciones, próxima pregunta y checklist editable. La Carta de Llamada ya se guarda en SQLite, se recupera al recargar, admite revisión explícita y derivación simulada. Categoría, prioridad y cada campo de ubicación tienen revisión individual. Groq es el proveedor real recomendado para probar con un plan gratuito; Haiku queda opcional. Ambos comparten extracción y checklist, con pruebas de contrato mediante transporte HTTP controlado. Se reprodujo y corrigió un fallo real de evidencia con Groq; la evaluación semántica más amplia permanece pendiente.
 
 ## Objetivo
 
@@ -22,9 +22,9 @@ Requiere Docker con Compose:
 docker compose up --build
 ```
 
-El panel queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas de demostración. El catálogo y checklist se aplican por separado. El panel consume ambos endpoints sin enviar transcripciones a terceros.
+El panel queda accesible en [localhost:8000](http://localhost:8000), con [salud](http://localhost:8000/health), [documentación HTTP](http://localhost:8000/docs) y [contratos JSON Schema](http://localhost:8000/contracts). El endpoint `POST /api/analyze` procesa transcripciones mediante reglas de demostración. El catálogo y checklist se aplican por separado. En modo mock el panel consume ambos endpoints sin enviar transcripciones a terceros. En modo Groq o Haiku, el backend envía la conversación solamente al proveedor seleccionado.
 
-No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, único proveedor implementado por ahora. El primer build descarga la imagen y dependencias; el servicio en ejecución no necesita servicios externos.
+No requiere claves ni un archivo de configuración. `.env.example` permite configurar `APP_PORT` y documenta `LLM_PROVIDER=mock`, el modo recomendado `groq` y `haiku` opcional. El primer build descarga la imagen y dependencias; el modo mock en ejecución no necesita servicios externos.
 
 Para detenerlo: `docker compose down`. El volumen `call-data` conserva las llamadas al recrear el contenedor. `docker compose down -v` elimina ese volumen y sus datos; no usarlo si se quiere conservar la atención. Los contratos, decisiones y verificaciones están en [domain-contracts.md](docs/domain-contracts.md).
 
@@ -44,9 +44,9 @@ El historial existente queda fijo para conservar los offsets de evidencia. Los n
 
 Al añadir turnos se conserva categoría, prioridad y ubicación revisadas, incluso si el operador decidió dejarlas sin determinar. La combinación también preserva campos con procedencia de operador y respuestas manuales compatibles. Si una sugerencia nueva difiere de una decisión humana se muestra un aviso; no la sobrescribe. El protocolo elegido explícitamente se mantiene cuando corresponde a la categoría; la guía general automática se vuelve a decidir por la categoría actual; si deja de corresponder se solicita elegir otro. La extracción y el cálculo del protocolo deben terminar correctamente antes de reemplazar el estado visible. Si falla alguno, se conservan el historial anterior, sus correcciones y los turnos sin enviar para reintentar. El límite es de 50.000 caracteres para la conversación completa.
 
-La comprensión del mock sigue siendo conservadora: anexar una respuesta no garantiza que una paráfrasis se interprete correctamente. Un evaluador contextual separado reconoce diálogo explícito y un repertorio limitado sobre personas atrapadas; una señal de presencia dentro solo aporta evidencia ambigua, nunca confirma atrapamiento. Las otras preguntas conservan la interpretación de diálogo explícito; no se añadieron reglas por registro para este incremento. El estado se guarda localmente en SQLite; la derivación es una simulación explícita. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
+La comprensión del mock sigue siendo conservadora: anexar una respuesta no garantiza que una paráfrasis se interprete correctamente. Un evaluador contextual separado reconoce diálogo explícito y un repertorio limitado sobre personas atrapadas; una señal de presencia dentro solo aporta evidencia ambigua, nunca confirma atrapamiento. En modo mock las otras preguntas conservan la interpretación limitada de diálogo explícito; no se añadieron reglas por registro para este incremento. El estado se guarda localmente en SQLite; la derivación es una simulación explícita. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
 
-El caso del incendio con una persona dentro queda ambiguo con cita verificable. La guía propone una aclaración registrada en `data/protocols/follow-ups.json` (`demo-follow-ups-v1`), con procedencia propia y advertencia de demostración; no procede del CSV. El archivo original y el catálogo generado se mantienen intactos. El motor selecciona protocolos y combina revisiones manuales; `ChecklistEvaluator` recibe solamente conversación y preguntas del protocolo, y su salida se valida contra IDs, textos, aclaraciones autorizadas y offsets. `MockChecklistEvaluator` es la única implementación actual. Haiku sigue pendiente: no hay evaluación semántica general ni llamadas externas.
+El caso del incendio con una persona dentro queda ambiguo con cita verificable. La guía propone una aclaración registrada en `data/protocols/follow-ups.json` (`demo-follow-ups-v1`), con procedencia propia y advertencia de demostración; no procede del CSV. El archivo original y el catálogo generado se mantienen intactos. El motor selecciona protocolos y combina revisiones manuales; `ChecklistEvaluator` recibe solamente conversación y preguntas del protocolo, y su salida se valida contra IDs, textos, aclaraciones autorizadas y offsets. `MockChecklistEvaluator` conserva su implementación limitada; `LLMChecklistEvaluator` ofrece interpretación semántica por API con Groq o Haiku cuando se configura explícitamente. La evaluación semántica amplia del proveedor real corresponde al Hito 4; las comprobaciones puntuales de integración no garantizan precisión.
 
 Los tres elementos de incertidumbre —resumen central, próxima pregunta y checklist— se calculan desde la misma lista de preguntas publicada por el protocolo. La actualización de seguimiento guarda la referencia al ítem, no otra copia de su estado o respuesta. La respuesta y evidencia del backend se mantienen en ese ítem; el historial conserva el relato anterior. Los borradores de edición manual solo afectan la vista publicada al guardarse. La sincronización no amplía la comprensión semántica del mock: una respuesta no interpretable sigue ambigua para revisión.
 
@@ -57,6 +57,30 @@ El bloque **DECIR AHORA** se destaca en rojo y negrita como acción de comunicac
 Cada pregunta tiene un selector de estado y una acción **Revisar**. Marcarla respondida requiere una respuesta; pendiente por decisión manual, ambigua y no aplicable requieren una justificación. **Guardar revisión** valida el cambio en el backend y conserva la procedencia humana. Si el diálogo posterior aporta una respuesta distinta o incierta, se muestra un aviso sin reemplazar lo registrado por el operador. La comparación inicial es conservadora sobre texto/estado; no demuestra equivalencia o contradicción semántica. Las preguntas e instrucciones siempre provienen del protocolo aplicado. No se agregan preguntas en el frontend. La confirmación aparece dentro de la edición, sin botones permanentes junto a cada sugerencia. La revisión final sigue disponible desde la Carta. La confirmación es individual: aceptar la categoría no confirma la prioridad ni cambia el protocolo o las respuestas revisadas. Solo cambiar la categoría vuelve a calcular la guía.
 
 Para desarrollar el panel: Node 24 y `cd frontend && npm ci && npm run dev`, con la API en el puerto 8000 (`uvicorn backend.main:app --reload`). Vite usa un proxy local para `/api`. `cd frontend && npm run build` verifica TypeScript y genera el build; FastAPI sirve ese build en Docker, sin proceso Node durante la ejecución. React/React DOM implementan la interfaz; TypeScript valida tipos y Vite compila los assets. Las versiones resueltas están en el lockfile.
+
+## Evaluación local de desarrollo
+
+Con las dependencias Python instaladas:
+
+~~~bash
+python3 scripts/evaluate.py --provider mock
+~~~
+
+No necesita la API encendida, Docker ni credenciales. El modo por defecto es Mock incluso si el entorno selecciona otro proveedor. Usa únicamente los dos casos propios ya expuestos en [development.json](data/evaluation/development.json), no los 30 registros del CSV ni los ocho casos sintéticos apartados.
+
+El JSON queda en `artifacts/evaluation/development.json`, excluido de Git. Registra proveedor, modelo y configuración cuando corresponde, versión de prompt, hash de los casos, tiempos y diferencias por campo/pregunta. Las expectativas no se envían al extractor ni al evaluador del checklist. Los reportes omiten transcripciones completas y credenciales. No se informa consumo porque el contrato actual no lo expone.
+
+Las comparaciones son literales: una diferencia puede ser de formato o de interpretación y requiere revisión. No se calcula precisión semántica ni se usa otro LLM como juez. La primera corrida Mock completó ambos casos y reportó diferencias en ambos, incluidas omisiones y variaciones de redacción. Se conservan esos resultados sin ampliar las reglas para reproducir las expectativas.
+
+Para una corrida real posterior, con `GROQ_API_KEY` exportada en el entorno y los parámetros `GROQ_MODEL`/`GROQ_REASONING_EFFORT` deseados:
+
+~~~bash
+python3 scripts/evaluate.py --provider groq --output artifacts/evaluation/groq-development.json
+~~~
+
+El script no carga `.env` automáticamente. El proveedor real se activa solo con la opción explícita y consume cupo. Un HTTP 429 detiene los casos restantes; se reportan como omitidos, sin reintentos del evaluador ni reemplazo por Mock. El transporte conserva su presupuesto acotado para otros fallos. Una ejecución devuelve código 0 si coinciden todas las expectativas y 1 si hay diferencias, errores o casos omitidos. Los casos inválidos se rechazan antes de consultar al proveedor.
+
+Este comando prepara parte del Hito 4; todavía falta definir casos reservados y una evaluación más amplia de afirmaciones sin respaldo y revisión humana. Los resultados de desarrollo no demuestran generalización.
 
 ## Carta de Llamada y persistencia
 
@@ -80,6 +104,56 @@ El servidor controla estados, fechas e identificadores. Valida evidencia y refer
 
 Sin Docker, `CALLS_DB_PATH` permite cambiar la ruta predeterminada `data/private/calls.sqlite3`. En Compose se utiliza `/app/data/private/calls.sqlite3` dentro del volumen. No se guarda la base en Git ni se incorpora a la imagen. El navegador conserva solamente el UUID de la llamada activa en `localStorage`; los datos están en el servidor local. Es un prototipo local sin autenticación ni política de retención para operación real.
 
+## Activar Groq (Hito 3)
+
+El modo predeterminado sigue siendo mock, offline y sin claves. Para probar un LLM remoto usando una cuenta Groq **Free**, copiar `.env.example` a `.env` y configurar localmente:
+
+```dotenv
+LLM_PROVIDER=groq
+GROQ_API_KEY=tu_clave_local
+GROQ_MODEL=openai/gpt-oss-120b
+GROQ_REASONING_EFFORT=medium
+LLM_TIMEOUT_SECONDS=20
+LLM_MAX_RETRIES=1
+```
+
+Luego ejecutar `docker compose up --build -d`. La clave se pasa al contenedor en ejecución; no se copia a la imagen ni al navegador. Una clave vacía impide arrancar el proveedor real seleccionado. Para volver al modo local, usar `LLM_PROVIDER=mock` y recrear el servicio.
+
+El modelo predeterminado `openai/gpt-oss-120b` admite [JSON Schema estricto en Groq](https://console.groq.com/docs/structured-outputs). `GROQ_MODEL` es configurable, pero el modelo elegido debe admitir `strict: true`; no se degrada automáticamente a JSON sin esquema. El adaptador utiliza HTTPX, ya declarado como dependencia, sin añadir otro SDK. El esquema remoto hace todos los campos requeridos, admite valores nulos y prohíbe propiedades adicionales; Pydantic vuelve a aplicar localmente las restricciones originales. Se reservan hasta 3000 tokens de salida por consulta, con razonamiento medio en GPT-OSS, configurable mediante `GROQ_REASONING_EFFORT`. La selección se revisó tras observar inferencias injustificadas con el modelo pequeño y razonamiento bajo; no constituye un benchmark de modelos.
+
+**El programa no puede certificar si una clave corresponde a un plan gratuito.** Usar una cuenta Free y revisar los [límites de la organización](https://console.groq.com/docs/rate-limits) antes de probar. Una cuenta con facturación habilitada puede generar cargos. Los cupos dependen de la cuenta/modelo y las conversaciones largas o actualizaciones frecuentes pueden agotarlos. Si Groq devuelve 429, se muestra un aviso explícito y no se reintenta automáticamente esa solicitud: esperar o continuar con carga manual.
+
+Haiku permanece como alternativa opcional, sin usarse al seleccionar Groq:
+
+```dotenv
+LLM_PROVIDER=haiku
+ANTHROPIC_API_KEY=tu_clave_local
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+```
+
+Ese modo usa el [SDK oficial de Anthropic](https://platform.claude.com/docs/en/build-with-claude/structured-outputs), fijado en `anthropic==0.84.0`, y puede consumir créditos. Cada modo utiliza únicamente su credencial; una clave Anthropic no habilita Groq, ni una clave presente cambia el proveedor configurado.
+
+El encabezado y `GET /api/config` muestran proveedor y modelo activos, sin exponer claves. El origen del análisis de una llamada recuperada sigue visible en sus detalles, aunque cambie el proveedor activo.
+
+El flujo mantiene dos responsabilidades:
+
+1. La extracción recibe solamente el relato, con instrucciones generales y un esquema versionado. Devuelve ubicación, categoría, subtipo sustentado, señales y resumen. No recibe filas, etiquetas esperadas ni ejemplos del CSV.
+2. Una vez elegido el protocolo por el motor existente, el evaluador recibe relato, IDs, preguntas, tipo de respuesta y aclaraciones autorizadas. Devuelve pendiente/respondida/ambigua con respuesta y evidencia. No recibe respuestas esperadas ni decisiones manuales. El motor conserva la revisión humana y toma instrucciones de prearribo del catálogo.
+
+El proveedor devuelve únicamente citas literales. El servidor localiza cada fragmento único y construye offsets en caracteres Python, también con Unicode. Si una cita se repite, exige más contexto; no elige arbitrariamente una aparición ni pide al LLM calcular índices. Una cita ausente, esquema inválido, pregunta ajena al catálogo, salida truncada o rechazo del modelo no se publica como análisis correcto. Esto comprueba procedencia, **no corrección semántica**.
+
+El proveedor LLM **no asigna automáticamente P1–P4**: sin política operativa validada, la prioridad queda desconocida hasta revisión humana. No se entrenó un clasificador ni se trasladaron las reglas mock a los prompts. Los campos explícitos y las inferencias conservan procedencia distinta, sin confirmaciones humanas inventadas.
+
+El timeout de transporte es de 20 segundos por intento (configurable entre 1 y 30, conexión hasta 5). Se permite un solo reintento adicional, configurable a cero, para fallos de conexión, timeout, HTTP 408/409 y 5xx, con espera fija de 250 ms. Groq no reintenta HTTP 429; Haiku conserva un reintento acotado para 429. Los reintentos internos del SDK Anthropic están desactivados. No se reintentan credenciales rechazadas. Groq permite una única corrección dentro del mismo presupuesto de reintentos si la API rechaza el esquema o falla la validación local. En este último caso se devuelven la salida previa y los errores como datos JSON no confiables, sin incrustarlos como instrucciones. Se mantienen todas las validaciones; agotado el intento, se informa el error. La interfaz espera hasta 75 segundos por petición de análisis/protocolo. Cada actualización automática normalmente implica una consulta de extracción y otra de checklist; no hay cache ni garantías de latencia o precisión medidas todavía.
+
+Ante un fallo se conservan conversación, correcciones y turnos sin incorporar. **Continuar con carga manual** es una acción explícita: conserva los datos disponibles, permite editar campos, aplicar guías y registrar respuestas sin consultar la IA. Las preguntas automáticas pasan a pendientes; las respuestas humanas compatibles se mantienen. El modo manual se guarda en SQLite y también permite anexar turnos, revisar y derivar. No hay cambio silencioso a Mock ni nuevos hechos automáticos. Para volver a un recorrido automático se inicia otra llamada.
+
+Verificación actual: 76 pruebas Python, incluidas 17 de transporte y contratos LLM (siete de Haiku y diez de Groq), cinco pruebas del frontend y build. Cubren salida estructurada, estados consistentes, citas únicas y Unicode, rechazo de etiquetas no permitidas, distinción entre reportes literales e inferencias, corrección acotada, errores y cuotas sin reintentos para HTTP 429. Docker y la continuación manual se comprobaron con respuestas controladas. Esas pruebas no miden precisión del modelo.
+
+En las comprobaciones reales con Groq se detectaron y corrigieron dependencias frágiles de los números de aparición, respuestas sin citas y confusión entre presencia dentro y atrapamiento. Con GPT-OSS 120B y razonamiento medio se comprobaron presencia ambigua, una respuesta descriptiva sobre heridos y negativas explícitas. La combinación con decisiones humanas y SQLite se verificó reutilizando una respuesta real, sin nuevas inferencias. Son comprobaciones de desarrollo, no evaluación independiente ni garantía de generalización. Ver [casos y resultados del Hito 3](docs/hito3-development-checks.md).
+
+El prompt actual es incident-v6: refuerza la extracción completa de la dirección vigente y evita mezclar componentes de direcciones corregidas. Una intersección se omitió en un caso anterior, aunque otra se extrajo correctamente. Tras los HTTP 429 se retomó con solo dos consultas y sin reintentos: una salida inválida fue rechazada y la siguiente extrajo correctamente calle, altura y transversal corregidas. Una consulta posterior comprobó el checklist: atrapados negativos, ubicación corregida y heridos/peligro ambiguos. La conservación manual se verificó con replay y SQLite temporal. Se completa la integración del Hito 3; una salida correcta no demuestra consistencia. La evaluación amplia continúa en el Hito 4 y la corrida de los 30 registros permanece reservada para el final.
+
 ## Analizar una transcripción
 
 ```bash
@@ -95,7 +169,7 @@ La respuesta incluye datos, evidencia y advertencias. Los campos que las reglas 
 - `GET /api/protocols?category=INCENDIO_RESCATE` lista candidatos.
 - `POST /api/protocols/apply` recibe `request`, `data` y un `protocol_id` opcional.
 - La categoría conocida activa su guía general (`selection=general`, `selection_origin=category`); `scope` distingue guía general y protocolo específico. Sin categoría no se elige una guía por defecto. No se copian respuestas del CSV.
-- El checklist conserva evidencia y revisión manual compatible. La interpretación inicial se limita a diálogo explícito; respuestas implícitas en relato libre quedan pendientes.
+- El checklist conserva evidencia y revisión manual compatible. El mock mantiene interpretación limitada; el proveedor LLM evalúa la conversación completa contra las preguntas recibidas.
 - Las instrucciones del catálogo conservan fuente y estado `demo_unverified`.
 
 Las seis guías generales están definidas explícitamente en `data/protocols/general.json`, versión `general-demo-v1`. Son curaduría propia de demostración, separada de los 30 protocolos derivados del CSV; no se generan fusionando sus instrucciones ni reconociendo establecimientos concretos. Se reutilizan formulaciones e IDs de preguntas compatibles para conservar revisiones al cambiar de guía; no se importan respuestas ni estados del CSV. Su contenido requiere revisión antes de cualquier uso operativo. Cubrir las seis categorías no implica comprender todos sus incidentes ni validar las instrucciones.

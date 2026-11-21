@@ -55,10 +55,9 @@ Primer incremento — `feat/mock-analysis`:
 - [x] Implementar checklist inicial con evidencia para diálogo explícito y conservación de respuestas manuales compatibles.
 - [x] Separar la evaluación contextual del checklist y cubrir de forma conservadora presencia/atrapamiento con evidencia y aclaración versionada.
 
-Incremento actual: `feat/call-card-persistence`, carta y SQLite sobre la conversación progresiva. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El recorrido principal del operador está implementado y verificado en mock. Queda pendiente la carga de ejemplos desde el panel; por eso no se declara completo todo el checklist del hito. Este pendiente de interfaz no impide comenzar el Hito 3. Las limitaciones semánticas del mock se mantienen explícitas.
+Incremento actual: `feat/call-card-persistence`, carta y SQLite sobre la conversación progresiva. Ver [catálogo y checklist](docs/protocol-engine.md) y [reglas de simulación](docs/mock-priority-risks.md). El recorrido mock del Hito 2 está completo. La carga directa de ejemplos se descartó como requisito del operador: es una comodidad de demo y se pueden pegar relatos manualmente. Las limitaciones semánticas del mock se mantienen explícitas.
 
 - [x] Cargar texto libre y ejemplos pegados manualmente.
-- [ ] Incorporar carga directa de ejemplos desde el panel.
 - [x] Extraer mediante reglas deterministas y seleccionar protocolos del catálogo local.
 - [x] Mostrar datos, evidencia, preguntas e instrucciones en el panel.
 - [x] Cargar texto libre con Enter, confirmar/corregir categoría y prioridad y elegir el tipo de incidente sin menús intermedios.
@@ -78,21 +77,22 @@ Aceptación: con `docker compose up --build`, sin claves ni servicios externos d
 2. Guía y checklist: instrucciones, siguiente pregunta y revisión manual de estados implementadas; confirmaciones individuales de categoría, prioridad y ubicación implementadas.
 3. Carta de Llamada y SQLite: guardar conversación, revisiones, selección de protocolo y decisiones humanas; revisión explícita y derivación simulada. Implementado, incluida revisión individual de categoría, prioridad y ubicación.
 4. Evidencia resaltada en el texto y sugerencia de protocolo confirmable cuando haya evidencia suficiente; nunca elegir el primero por defecto.
-5. Haiku sobre los mismos contratos y el mismo frontend, con proveedor activo visible.
+5. Groq (Haiku opcional) sobre los mismos contratos y el mismo frontend, con proveedor activo visible.
 6. Verificación integral, documentación y preparación de entrega.
 
 ## Hito 3 — LLM y controles de incertidumbre
 
-Se retoma con Haiku después de integrar los PRs del recorrido mock. La carga directa de ejemplos del Hito 2 permanece registrada como pendiente de interfaz.
+Rama: `feat/groq-provider`, sobre los PRs del Hito 2 ya integrados. Integración y controles verificados mediante transporte controlado, comprobaciones reales acotadas con Groq y replay local de decisiones humanas. incident-v6 conserva los contratos del dominio; GPT-OSS 120B usa razonamiento medio. Se registró un intento inválido rechazado antes de obtener una extracción válida. Se completa el alcance de integración de este hito, sin afirmar precisión semántica ni generalización; esa evaluación continúa en el Hito 4.
 
-- [ ] Integrar Haiku como proveedor real con configuración por entorno.
-- [ ] Ampliar la comprensión semántica de preguntas y paráfrasis, conservando revisión humana.
-- [ ] Validar salida estructurada y fragmentos de evidencia.
-- [ ] Separar afirmaciones del relato de inferencias.
-- [ ] Aplicar tiempos de espera y reintentos acotados donde corresponda.
-- [ ] Mostrar proveedor y fallos explícitos, conservando la posibilidad de carga manual.
-- [ ] Tratar la transcripción como contenido, no como instrucciones del sistema.
-- [ ] Mantener instrucciones de prearribo en un catálogo con procedencia y estado de revisión.
+- [x] Integrar Groq como proveedor real recomendado, con configuración por entorno y Haiku opcional.
+- [x] Implementar evaluación semántica mediante el proveedor LLM, separada de protocolos y conservando revisión humana.
+- [x] Completar comprobaciones puntuales de respuestas explícitas/descriptivas, incertidumbre, negaciones y correcciones. Se probaron presencia dentro, una descripción de heridos, negativas y dirección corregida con checklist posterior. La continuidad manual se verificó mediante replay de respuestas reales y SQLite temporal, sin una nueva inferencia ni un recorrido de navegador. Ver [registro de desarrollo](docs/hito3-development-checks.md); no es evaluación independiente ni una métrica de precisión.
+- [x] Validar salida estructurada y fragmentos de evidencia.
+- [x] Separar afirmaciones del relato de inferencias.
+- [x] Aplicar tiempos de espera y reintentos acotados donde corresponda.
+- [x] Mostrar proveedor y fallos explícitos, conservando la posibilidad de carga manual.
+- [x] Tratar la transcripción como contenido, no como instrucciones del sistema.
+- [x] Mantener instrucciones de prearribo en un catálogo con procedencia y estado de revisión.
 
 Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas ambiguas, fallos de red y respuestas inválidas no generan una ficha aparentemente confirmada ni borran el trabajo del operador.
 
@@ -100,11 +100,13 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 
 Rama sugerida: `feat/evaluation`.
 
+Preparación local sobre el trabajo actual: scripts/evaluate.py ejecuta dos casos conocidos de desarrollo, compara campos y checklist, registra tiempos/configuración y detiene la corrida ante HTTP 429. Ver [uso y límites](README.md#evaluación-local-de-desarrollo). Se comprobó con Mock sin red: ambos casos completaron con diferencias, sin cambiar reglas. El Hito 3 completa su integración con comprobaciones puntuales; quedan pendientes las evaluaciones más amplias de este hito. Todavía no hay un conjunto reservado.
+
 - [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
 - [ ] Tras el primer extractor, decidir qué casos sintéticos adicionales aportan cobertura y revisar sus expectativas antes de usarlos.
 - [ ] Definir y versionar la separación entre desarrollo y evaluación.
 - [ ] Añadir casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones.
-- [ ] Evitar que las respuestas o filas completas de evaluación se filtren al prompt o a la recuperación.
+- [x] Mantener expectativas fuera de las entradas del proveedor en el comando de evaluación; verificación de esa separación sin red.
 - [ ] Evaluar ubicación, categoría, prioridad, checklist y afirmaciones sin respaldo.
 - [ ] Reportar conteos, fallos, latencia y consumo cuando esté disponible.
 - [ ] Distinguir resultados reales de pruebas mock; documentar cobertura limitada y ausencia de P4 en el dataset original.
@@ -127,6 +129,6 @@ Aceptación: el evaluador puede clonar el repo, ejecutar el único comando reque
 
 ## Prioridad y presupuesto
 
-Primero se completa el flujo obligatorio en mock con catálogo y revisión humana; luego se integra Haiku y se evalúa. Las 72 horas son corridas desde la recepción: se reservan las últimas seis para documentación, video y contingencias, ajustando el alcance al tiempo real disponible.
+Primero se completa el flujo obligatorio en mock con catálogo y revisión humana; luego se integra Groq y se evalúa. Las 72 horas son corridas desde la recepción: se reservan las últimas seis para documentación, video y contingencias, ajustando el alcance al tiempo real disponible.
 
 Mapas, audio, geocodificación externa, múltiples proveedores reales y otros extras se consideran solo después de completar los hitos obligatorios.

@@ -38,7 +38,7 @@ export type ProtocolResult = {
 
 export type CallStatus = 'draft' | 'reviewed' | 'referred';
 export type CallContext = {
-  analysis: Analysis | null; protocol: ProtocolResult | null;
+  analysis: Analysis | null; manual_mode: boolean; protocol: ProtocolResult | null;
   manual_fields: ManualField[];
   operator_turn: string; caller_turn: string;
   prepared_question: { id: string; protocol_id: string; prompt: string; number: number; stage: 'prepared' | 'awaiting_reply' } | null;
@@ -63,3 +63,5 @@ export type CallSummary = {
 export type RevisionSummary = {
   revision: number; event: 'saved' | 'reviewed' | 'referred'; created_at: string;
 };
+
+export type ProviderInfo = { configured_provider: 'mock' | 'haiku' | 'groq'; configured_model: string | null };
