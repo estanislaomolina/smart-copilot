@@ -1,0 +1,53 @@
+{
+  "split": "evaluation",
+  "description": "Dos casos propios reservados para incident-v7, definidos después del cambio de prompt y antes de consultar proveedores. Muestra mínima, sin representatividad estadística.",
+  "cases": [
+    {
+      "id": "V2-01",
+      "focus": "toponimo_sin_tipo",
+      "transcript": "Llamante: Me avisan que hay humo y fuego en El Pinar, pero no saben si ese nombre es una calle o una zona. No tengo altura ni localidad. No sé si hay personas dentro.",
+      "fields": {
+        "category": "INCENDIO_RESCATE",
+        "location.street": null,
+        "location.number": null,
+        "location.district": null,
+        "location.reference": "El Pinar"
+      },
+      "questions": [
+        {
+          "text": "¿Hay personas atrapadas en el interior?",
+          "status": "ambiguous"
+        }
+      ],
+      "review_notes": [
+        "Conservar el nombre sin inventar su tipo. El relato expresa la ambigüedad.",
+        "No saber si hay personas dentro no confirma atrapamiento."
+      ]
+    },
+    {
+      "id": "V2-02",
+      "focus": "calle_localidad_explicitas_y_negativas_descriptivas",
+      "transcript": "Llamante: Chocaron dos motos. La calle se llama Sauce Verde, altura 218, en la localidad de Monte Azul. Los dos conductores están afuera, pudieron salir solos; no iba nadie más. Están a salvo, lejos del tránsito, y no tienen heridas.",
+      "fields": {
+        "category": "ACCIDENTE_VIAL",
+        "location.street": "Sauce Verde",
+        "location.number": "218",
+        "location.district": "Monte Azul"
+      },
+      "questions": [
+        {
+          "text": "¿Hay personas que no pueden salir de los vehículos?",
+          "status": "answered"
+        },
+        {
+          "text": "¿Hay personas heridas o en peligro?",
+          "status": "answered"
+        }
+      ],
+      "review_notes": [
+        "Ambas respuestas esperadas son negativas. Revisar su significado además del estado.",
+        "Los tipos de vía y localidad están explícitos, sin necesidad de conocer los nombres."
+      ]
+    }
+  ]
+}

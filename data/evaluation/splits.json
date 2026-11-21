@@ -1,0 +1,27 @@
+{
+  "policy": "No presentar casos usados para ajustar una versión como evaluación independiente de esa versión. Mantener históricos sin sobrescribir.",
+  "suites": [
+    {
+      "path": "data/evaluation/holdout-v1.json",
+      "sha256": "4afc6d9160783803ab67b24899ae7d7475624f59cf3667cb4de20bd50cecaf8a",
+      "status": "historical_baseline",
+      "baseline_prompt": "incident-v6",
+      "use_from_incident_v7": "development",
+      "note": "Sus ocho resultados fueron inspeccionados antes de modificar el sistema."
+    },
+    {
+      "path": "data/evaluation/reliability-development-v1.json",
+      "status": "development",
+      "source_cases": [
+        "holdout-v1:EVAL-06",
+        "holdout-v1:EVAL-08"
+      ]
+    },
+    {
+      "path": "data/evaluation/holdout-v2.json",
+      "sha256": "2ea8e804e6dd3443fc5d7a8e6d3f92e389e59bfdeba3e5d624f8f5b84466bc6d",
+      "status": "reserved_for_first_incident_v7_run",
+      "note": "Congelado antes de ejecutar proveedores; no usar para ajustar durante la corrida."
+    }
+  ]
+}
