@@ -35,9 +35,16 @@ def strict_schema(model: type[BaseModel]) -> dict:
 def validation_issues(error: ValidationError) -> list[dict]:
     """Diagnóstico sin valores, citas, mensajes remotos ni nombres de campos extra."""
     roots = {"location", "category", "subcategory", "risks", "summary", "questions"}
-    return [{"type": issue["type"],
-             "field": next((part for part in issue["loc"] if part in roots), "response")}
-            for issue in error.errors(include_input=False, include_context=False, include_url=False)]
+    attributes = {"value", "origin", "quotes", "rationale", "text", "id", "status", "answer"}
+    issues = []
+    for issue in error.errors(include_input=False, include_context=False, include_url=False):
+        value = {"type": issue["type"],
+                 "field": next((part for part in issue["loc"] if part in roots), "response")}
+        attribute = next((part for part in reversed(issue["loc"]) if part in attributes), None)
+        if attribute:
+            value["attribute"] = attribute
+        issues.append(value)
+    return issues
 
 
 class GroqGateway:
@@ -100,7 +107,10 @@ class GroqGateway:
                         or not isinstance(message.get("content"), str)):
                     raise ValueError("Respuesta incompleta, rechazada o con herramientas.")
                 output = schema.model_validate_json(message["content"], context=payload)
-                record("valid")
+                discarded = getattr(output, "_discarded", [])
+                record("partial" if discarded else "valid", [
+                    {"type": "discarded_invalid_field", "field": path.split(".")[0].split("[")[0]}
+                    for path in discarded])
                 return output
             except httpx.TimeoutException:
                 record("timeout")

@@ -1,0 +1,339 @@
+{
+  "provider": "mock",
+  "split": "development",
+  "source_sha256": "14dd1776639625672c2475033b1bc9ba6ea817001fae6214e404d43cf4887d34",
+  "generator_sha256": "9bc74e5d4b13f4b5560b1d14817a77add17e67c723909e7ad61c31b5aca3d5b0",
+  "limitations": [
+    "Variantes derivadas de casos conocidos: no son evaluación independiente.",
+    "Comparaciones literales: una diferencia no demuestra error semántico.",
+    "No se probaron proveedores remotos ni se midió su precisión.",
+    "Los números en palabras pueden cambiar la grafía esperada aunque conserven el significado."
+  ],
+  "groups": {
+    "original": {
+      "cases": 30,
+      "changed": 0,
+      "counts": {
+        "passed": 0,
+        "failed": 30,
+        "error": 0,
+        "skipped": 0
+      },
+      "summary": {
+        "literal_comparisons": {
+          "category": {
+            "compared": 30,
+            "matched": 28
+          },
+          "subcategory": {
+            "compared": 30,
+            "matched": 0
+          },
+          "location": {
+            "compared": 90,
+            "matched": 42
+          },
+          "question_status": {
+            "compared": 1,
+            "matched": 0
+          }
+        },
+        "location_cases": {
+          "with_compared_fields": 30,
+          "all_compared_fields_matched": 3
+        },
+        "errors_by_code": {},
+        "attempt_diagnostics": null,
+        "terminal_invalid_outputs": 0,
+        "latency_seconds": {
+          "extraction": {
+            "samples": 30,
+            "min": 0.000218,
+            "median": 0.000286,
+            "max": 0.00414
+          },
+          "checklist": {
+            "samples": 30,
+            "min": 0.00013,
+            "median": 0.000219,
+            "max": 0.00063
+          },
+          "total": {
+            "samples": 30,
+            "min": 0.000379,
+            "median": 0.000518,
+            "max": 0.004792
+          }
+        },
+        "human_review": {
+          "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+          "total": 139,
+          "pending": 139,
+          "supported": 0,
+          "unsupported": 0,
+          "uncertain": 0
+        }
+      }
+    },
+    "minusculas": {
+      "cases": 30,
+      "changed": 30,
+      "counts": {
+        "passed": 0,
+        "failed": 30,
+        "error": 0,
+        "skipped": 0
+      },
+      "summary": {
+        "literal_comparisons": {
+          "category": {
+            "compared": 30,
+            "matched": 28
+          },
+          "subcategory": {
+            "compared": 30,
+            "matched": 0
+          },
+          "location": {
+            "compared": 90,
+            "matched": 0
+          },
+          "question_status": {
+            "compared": 1,
+            "matched": 0
+          }
+        },
+        "location_cases": {
+          "with_compared_fields": 30,
+          "all_compared_fields_matched": 0
+        },
+        "errors_by_code": {},
+        "attempt_diagnostics": null,
+        "terminal_invalid_outputs": 0,
+        "latency_seconds": {
+          "extraction": {
+            "samples": 30,
+            "min": 0.000197,
+            "median": 0.00026,
+            "max": 0.000362
+          },
+          "checklist": {
+            "samples": 30,
+            "min": 0.000127,
+            "median": 0.000217,
+            "max": 0.000574
+          },
+          "total": {
+            "samples": 30,
+            "min": 0.000338,
+            "median": 0.000494,
+            "max": 0.000954
+          }
+        },
+        "human_review": {
+          "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+          "total": 75,
+          "pending": 75,
+          "supported": 0,
+          "unsupported": 0,
+          "uncertain": 0
+        }
+      }
+    },
+    "espacios": {
+      "cases": 30,
+      "changed": 30,
+      "counts": {
+        "passed": 0,
+        "failed": 30,
+        "error": 0,
+        "skipped": 0
+      },
+      "summary": {
+        "literal_comparisons": {
+          "category": {
+            "compared": 30,
+            "matched": 24
+          },
+          "subcategory": {
+            "compared": 30,
+            "matched": 0
+          },
+          "location": {
+            "compared": 90,
+            "matched": 25
+          },
+          "question_status": {
+            "compared": 1,
+            "matched": 0
+          }
+        },
+        "location_cases": {
+          "with_compared_fields": 30,
+          "all_compared_fields_matched": 0
+        },
+        "errors_by_code": {},
+        "attempt_diagnostics": null,
+        "terminal_invalid_outputs": 0,
+        "latency_seconds": {
+          "extraction": {
+            "samples": 30,
+            "min": 0.000232,
+            "median": 0.000296,
+            "max": 0.000389
+          },
+          "checklist": {
+            "samples": 30,
+            "min": 0.000122,
+            "median": 0.000229,
+            "max": 0.000544
+          },
+          "total": {
+            "samples": 30,
+            "min": 0.000378,
+            "median": 0.000535,
+            "max": 0.000947
+          }
+        },
+        "human_review": {
+          "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+          "total": 120,
+          "pending": 120,
+          "supported": 0,
+          "unsupported": 0,
+          "uncertain": 0
+        }
+      }
+    },
+    "muletillas": {
+      "cases": 30,
+      "changed": 30,
+      "counts": {
+        "passed": 0,
+        "failed": 30,
+        "error": 0,
+        "skipped": 0
+      },
+      "summary": {
+        "literal_comparisons": {
+          "category": {
+            "compared": 30,
+            "matched": 28
+          },
+          "subcategory": {
+            "compared": 30,
+            "matched": 0
+          },
+          "location": {
+            "compared": 90,
+            "matched": 42
+          },
+          "question_status": {
+            "compared": 1,
+            "matched": 0
+          }
+        },
+        "location_cases": {
+          "with_compared_fields": 30,
+          "all_compared_fields_matched": 3
+        },
+        "errors_by_code": {},
+        "attempt_diagnostics": null,
+        "terminal_invalid_outputs": 0,
+        "latency_seconds": {
+          "extraction": {
+            "samples": 30,
+            "min": 0.000226,
+            "median": 0.000298,
+            "max": 0.000563
+          },
+          "checklist": {
+            "samples": 30,
+            "min": 0.000127,
+            "median": 0.000227,
+            "max": 0.000547
+          },
+          "total": {
+            "samples": 30,
+            "min": 0.000365,
+            "median": 0.000547,
+            "max": 0.001007
+          }
+        },
+        "human_review": {
+          "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+          "total": 139,
+          "pending": 139,
+          "supported": 0,
+          "unsupported": 0,
+          "uncertain": 0
+        }
+      }
+    },
+    "numeros_en_palabras": {
+      "cases": 30,
+      "changed": 27,
+      "counts": {
+        "passed": 0,
+        "failed": 30,
+        "error": 0,
+        "skipped": 0
+      },
+      "summary": {
+        "literal_comparisons": {
+          "category": {
+            "compared": 30,
+            "matched": 28
+          },
+          "subcategory": {
+            "compared": 30,
+            "matched": 0
+          },
+          "location": {
+            "compared": 90,
+            "matched": 18
+          },
+          "question_status": {
+            "compared": 1,
+            "matched": 0
+          }
+        },
+        "location_cases": {
+          "with_compared_fields": 30,
+          "all_compared_fields_matched": 0
+        },
+        "errors_by_code": {},
+        "attempt_diagnostics": null,
+        "terminal_invalid_outputs": 0,
+        "latency_seconds": {
+          "extraction": {
+            "samples": 30,
+            "min": 0.000241,
+            "median": 0.0003,
+            "max": 0.000473
+          },
+          "checklist": {
+            "samples": 30,
+            "min": 0.000128,
+            "median": 0.000273,
+            "max": 0.000901
+          },
+          "total": {
+            "samples": 30,
+            "min": 0.000393,
+            "median": 0.000615,
+            "max": 0.001302
+          }
+        },
+        "human_review": {
+          "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+          "total": 109,
+          "pending": 109,
+          "supported": 0,
+          "unsupported": 0,
+          "uncertain": 0
+        }
+      }
+    }
+  }
+}

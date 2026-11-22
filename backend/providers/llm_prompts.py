@@ -1,5 +1,5 @@
 """Prompts versionados, sin ejemplos, filas ni respuestas del dataset."""
-PROMPT_VERSION = "incident-v7"
+PROMPT_VERSION = "incident-v9"
 
 COMMON = """
 Sos un asistente de extracción para un prototipo de atención de emergencias.
@@ -58,6 +58,11 @@ Respetá correcciones explícitas posteriores. Si hay contradicción no resuelta
 no elijas una versión sin fundamento; dejá el dato desconocido con motivo breve.
 El resumen solo incluye hechos reportados e incertidumbres, con citas de respaldo.
 No asignes prioridades: requieren revisión humana y política operativa validada.
+Si recibís questions, evaluá esas preguntas en la misma extracción usando los
+estados answered, ambiguous y pending, con IDs y citas exactas. No inventes IDs.
+Una persona dentro no confirma atrapamiento. Una descripción concreta puede
+responder sin decir sí/no. Respetá negaciones, incertidumbre y correcciones.
+Si no recibís questions, devolvé questions=[].
 """
 
 CHECKLIST = COMMON + """

@@ -1,7 +1,7 @@
 """Salida reducida del modelo; los offsets y contratos públicos se construyen localmente."""
 from typing import Literal, get_args
 
-from pydantic import Field, ValidationInfo, model_validator
+from pydantic import Field, PrivateAttr, TypeAdapter, ValidationError, ValidationInfo, model_validator
 from pydantic_core import PydanticCustomError
 from backend.domain.models import Contract, Evidence, NonBlank, Category
 
@@ -77,12 +77,74 @@ class ReportedRisk(ReportedField):
         return self
 
 
+class ExtractedCategory(Contract):
+    """Una sola forma remota; las mismas invariantes de estado se verifican localmente."""
+    value: Category | None
+    origin: Literal["unknown", "transcript", "inference"]
+    quotes: list[Quote]
+    rationale: str | None
+
+    @model_validator(mode="after")
+    def validate_state(self, info: ValidationInfo):
+        # Evitar tres objetos anyOf casi idénticos en el decodificador remoto.
+        # Se conservan enum, nulabilidad y toda la validación previa de citas/procedencia.
+        TypeAdapter(UnknownField | ReportedCategory | InferredCategory).validate_python(
+            self.model_dump(), context=info.context)
+        return self
+
+
 class ExtractedIncident(Contract):
     location: ExtractedLocation
-    category: UnknownField | ReportedCategory | InferredCategory
+    category: ExtractedCategory
     subcategory: ExtractedField
     risks: list[ReportedRisk | InferredField]
     summary: ExtractedField
+    questions: list["EvaluatedQuestion"] = Field(default_factory=list)
+    _discarded: list[str] = PrivateAttr(default_factory=list)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def preserve_valid_fields(cls, raw, handler, info: ValidationInfo):
+        try:
+            return handler(raw)
+        except ValidationError as original:
+            required = {"location", "category", "subcategory", "risks", "summary"}
+            if (not isinstance(raw, dict) or not required <= raw.keys()
+                    or raw.keys() - cls.model_fields.keys()
+                    or not isinstance(raw["location"], dict)
+                    or set(raw["location"]) != set(ExtractedLocation.model_fields)
+                    or not isinstance(raw["risks"], list)
+                    or not isinstance(raw.get("questions", []), list)):
+                raise original
+            clean = dict(raw)
+            discarded = []
+            unknown = {"value": None, "origin": "unknown", "quotes": [], "rationale": None}
+
+            def check(value, kind, path, fallback):
+                try:
+                    return TypeAdapter(kind).validate_python(value, context=info.context).model_dump()
+                except ValidationError:
+                    discarded.append(path)
+                    return fallback
+
+            clean["location"] = {key: check(value, ExtractedField, "location." + key, unknown)
+                                 for key, value in raw["location"].items()}
+            for key, kind in (("category", ExtractedCategory), ("subcategory", ExtractedField),
+                              ("summary", ExtractedField)):
+                clean[key] = check(raw[key], kind, key, unknown)
+            clean["risks"] = [value for index, item in enumerate(raw["risks"])
+                              if (value := check(item, ReportedRisk | InferredField,
+                                                 f"risks[{index}]", None)) is not None]
+            clean["questions"] = [value for index, item in enumerate(raw.get("questions", []))
+                                  if (value := check(item, EvaluatedQuestion,
+                                                     f"questions[{index}]", None)) is not None]
+            result = handler(clean)
+            fields = [*(field for _, field in result.location), result.category,
+                      result.subcategory, result.summary, *result.risks]
+            if discarded and not any(field.value is not None for field in fields):
+                raise original
+            result._discarded = discarded
+            return result
 
     @model_validator(mode="after")
     def known_category(self):
@@ -128,3 +190,6 @@ class EvaluatedChecklist(Contract):
             if len(ids) != len(set(ids)) or set(ids) != expected:
                 raise ValueError("Deben devolverse exactamente los IDs recibidos.")
         return self
+
+
+ExtractedIncident.model_rebuild()

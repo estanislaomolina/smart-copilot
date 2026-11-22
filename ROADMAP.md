@@ -125,7 +125,7 @@ No se declara una mejora general de precisión o fiabilidad. La política de ubi
 Rama sugerida: `chore/release-preparation`.
 
 - [x] Probar arranque limpio, modo mock y persistencia. Verificación aislada con Compose en otro proyecto y puerto, sin tocar el contenedor ni el volumen existentes: panel, health, análisis, protocolo, guardado, revisión, derivación, recuperación, listado e historial respondieron correctamente.
-- [ ] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente.
+- [ ] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente. La verificación preliminar de solo extracción dejó 19 casos con diferencias, 11 salidas inválidas y 0 omitidos; ver [resultados](docs/dataset-30-results.md). La corrida real final v8 quedó detenida por cuota con 29/30 registros: 21 flujos con diferencias literales, 7 salidas inválidas y 1 error de cuota. Falta el caso 030; no se marca completa. Ver [resultado y denominadores](docs/final-csv-run.md#resultado-registrado-de-la-corrida-20bincident-v8).
 - [x] Completar README y memoria de decisiones con resultados y limitaciones reales. Ver [decisiones](docs/decisions.md).
 - [x] Revisar secretos y contenido de archivos, historial e imagen. Sin claves reales en archivos versionados; `.env`, PDF y SQLite nunca entraron al historial; la imagen no incluye credenciales, base de ejecución ni el PDF.
 - [ ] Grabar video de 1–3 minutos: arranque, transcripción, asistencia, corrección y derivación.
@@ -141,3 +141,15 @@ Aceptación: el evaluador puede clonar el repo, ejecutar el único comando reque
 Primero se completa el flujo obligatorio en mock con catálogo y revisión humana; luego se integra Groq y se evalúa. Las 72 horas son corridas desde la recepción: se reservan las últimas seis para documentación, video y contingencias, ajustando el alcance al tiempo real disponible.
 
 Mapas, audio, geocodificación externa, múltiples proveedores reales y otros extras se consideran solo después de completar los hitos obligatorios.
+
+## Cierre de fiabilidad — incident-v9
+
+- [x] Conservar campos válidos y descartar individualmente datos inválidos, con advertencia visible.
+- [x] Evaluar las preguntas existentes de las guías generales en la extracción y reutilizar respuestas con evidencia para la misma conversación/definición; consultar solo preguntas faltantes.
+- [x] Preservar decisiones humanas, invalidar reutilización al cambiar la conversación y limitar la memoria por proceso.
+- [x] Ejecutar 30 originales y cuatro variantes por caso en Mock: 150 evaluaciones offline, sin errores de ejecución y con diferencias literales documentadas.
+- [x] Publicar los números reales de la corrida v8, separados de las verificaciones v9.
+- [ ] Medir de nuevo el proveedor real con v9 cuando exista cuota; no se afirma una mejora semántica ni de consumo.
+- [ ] Completar revisión humana, video, acceso público y tag de entrega según autorización.
+
+Ver [alcance, comprobaciones y límites](docs/reliability-closure.md).
