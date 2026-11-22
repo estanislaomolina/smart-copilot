@@ -51,3 +51,19 @@ Al retomar, el error de cuota anterior se conserva. Si se decide repetir ese cas
 Los archivos de ejecución quedan ignorados en artifacts/. Tras finalizar se revisarán y se podrá versionar un resumen sin credenciales ni cuerpos remotos.
 
 Verificación previa: tres pruebas del adaptador, persistencia de casos interrumpidos y control de ritmo/presupuesto; corrida completa y continuación con Mock sin red. La ejecución con Groq se revisará al terminar.
+
+## Corrida iniciada
+
+Se inició la corrida Groq el 2026-11-22 a las 02:16 UTC (21 de noviembre por la noche en Argentina), con el código congelado en 2fd69ee.
+Contenedor: smart-copilot-csv-final-20261122-021650-947341.
+Directorio local ignorado: artifacts/final-evaluation/20261122-021650-947341/.
+El archivo artifacts/final-evaluation/latest.json permite ubicar la corrida.
+
+Consultar avance:
+
+~~~bash
+docker logs -f smart-copilot-csv-final-20261122-021650-947341
+~~~
+
+El estado durable queda en output/progress.json y el acumulado en output/summary.json, dentro de ese directorio. Al terminar o detenerse, el contenedor queda disponible para inspeccionar su código de salida.
+Se verificó al inicio que el contenedor estaba en ejecución y procesaba el primer caso. No se declara finalizada ni se revisan resultados anticipadamente; se hará cuando el propietario avise.
