@@ -58,29 +58,21 @@ Cada pregunta tiene un selector de estado y una acción **Revisar**. Marcarla re
 
 Para desarrollar el panel: Node 24 y `cd frontend && npm ci && npm run dev`, con la API en el puerto 8000 (`uvicorn backend.main:app --reload`). Vite usa un proxy local para `/api`. `cd frontend && npm run build` verifica TypeScript y genera el build; FastAPI sirve ese build en Docker, sin proceso Node durante la ejecución. React/React DOM implementan la interfaz; TypeScript valida tipos y Vite compila los assets. Las versiones resueltas están en el lockfile.
 
-## Evaluación local de desarrollo
-
-Con las dependencias Python instaladas:
+## Evaluación reproducible
 
 ~~~bash
 python3 scripts/evaluate.py --provider mock
 ~~~
 
-No necesita la API encendida, Docker ni credenciales. El modo por defecto es Mock incluso si el entorno selecciona otro proveedor. Usa únicamente los dos casos propios ya expuestos en [development.json](data/evaluation/development.json), no los 30 registros del CSV ni los ocho casos sintéticos apartados.
+Funciona sin API encendida, Docker ni credenciales. Por defecto usa dos casos conocidos de desarrollo, incluso si el entorno del producto selecciona Groq. --case permite elegir IDs y --limit acota la cantidad.
 
-El JSON queda en `artifacts/evaluation/development.json`, excluido de Git. Registra proveedor, modelo y configuración cuando corresponde, versión de prompt, hash de los casos, tiempos y diferencias por campo/pregunta. Las expectativas no se envían al extractor ni al evaluador del checklist. Los reportes omiten transcripciones completas y credenciales. No se informa consumo porque el contrato actual no lo expone.
+El reporte v2 en `artifacts/evaluation/development.json` registra comparaciones literales, errores y tiempos separados de extracción, checklist y total. Incluye intentos observados y entradas con evidencia para revisión humana, todas pendientes al generarse. Una cita existente no certifica una interpretación. Los reportes quedan excluidos de Git y no incluyen claves ni transcripciones completas.
 
-Las comparaciones son literales: una diferencia puede ser de formato o de interpretación y requiere revisión. No se calcula precisión semántica ni se usa otro LLM como juez. La primera corrida Mock completó ambos casos y reportó diferencias en ambos, incluidas omisiones y variaciones de redacción. Se conservan esos resultados sin ampliar las reglas para reproducir las expectativas.
+Se prepararon [ocho casos reservados](data/evaluation/holdout-v1.json), con expectativas previas y hash versionado. Se completó la primera corrida de los ocho casos, sin repeticiones: tres coinciden con las comprobaciones, dos tienen diferencias de ubicación y tres fallaron por salida inválida. Fueron doce solicitudes, con pausas y cero reintentos; no se ajustó el sistema durante la corrida. Los cuatro casos con dos consultas al modelo tardaron entre 4,53 y 5,61 segundos. Ver [registro de resultados](docs/evaluation-results.md). Las comprobaciones locales con Mock siguen utilizando únicamente los dos casos conocidos. No se incorporaron los ocho casos sintéticos previos ni los 30 registros del CSV a estas corridas.
 
-Para una corrida real posterior, con `GROQ_API_KEY` exportada en el entorno y los parámetros `GROQ_MODEL`/`GROQ_REASONING_EFFORT` deseados:
+Groq debe seleccionarse explícitamente con --provider groq y requiere la clave exportada en el entorno; el script no carga .env. El evaluador desactiva sus reintentos por defecto y se detiene ante 429; --max-retries 1 permite medir explícitamente la corrección acotada. Con el límite por defecto puede realizar como máximo cuatro solicitudes. La configuración de reintentos del producto permanece igual. El consumo no está disponible en el contrato y se registra como null.
 
-~~~bash
-python3 scripts/evaluate.py --provider groq --output artifacts/evaluation/groq-development.json
-~~~
-
-El script no carga `.env` automáticamente. El proveedor real se activa solo con la opción explícita y consume cupo. Un HTTP 429 detiene los casos restantes; se reportan como omitidos, sin reintentos del evaluador ni reemplazo por Mock. El transporte conserva su presupuesto acotado para otros fallos. Una ejecución devuelve código 0 si coinciden todas las expectativas y 1 si hay diferencias, errores o casos omitidos. Los casos inválidos se rechazan antes de consultar al proveedor.
-
-Este comando prepara parte del Hito 4; todavía falta definir casos reservados y una evaluación más amplia de afirmaciones sin respaldo y revisión humana. Los resultados de desarrollo no demuestran generalización.
+Ver [protocolo de evaluación, comandos y revisión humana](docs/evaluation.md). La mejora incident-v7 incorpora diagnósticos por intento y conserva nombres de ubicación ambiguos como referencias; ver [cambios y medición acotada](docs/llm-reliability.md). En dos casos nuevos, uno completó seis comprobaciones y otro falló por formato aun con el reintento; ver [resultados y límites](docs/llm-reliability-results.md). No se afirma mejora global. La primera corrida del Hito 4 está completa, con resultados mixtos y revisión asistida documentada. La revisión humana independiente sigue pendiente; no se afirma precisión general ni validación operativa.
 
 ## Carta de Llamada y persistencia
 
@@ -148,11 +140,11 @@ El timeout de transporte es de 20 segundos por intento (configurable entre 1 y 3
 
 Ante un fallo se conservan conversación, correcciones y turnos sin incorporar. **Continuar con carga manual** es una acción explícita: conserva los datos disponibles, permite editar campos, aplicar guías y registrar respuestas sin consultar la IA. Las preguntas automáticas pasan a pendientes; las respuestas humanas compatibles se mantienen. El modo manual se guarda en SQLite y también permite anexar turnos, revisar y derivar. No hay cambio silencioso a Mock ni nuevos hechos automáticos. Para volver a un recorrido automático se inicia otra llamada.
 
-Verificación actual: 76 pruebas Python, incluidas 17 de transporte y contratos LLM (siete de Haiku y diez de Groq), cinco pruebas del frontend y build. Cubren salida estructurada, estados consistentes, citas únicas y Unicode, rechazo de etiquetas no permitidas, distinción entre reportes literales e inferencias, corrección acotada, errores y cuotas sin reintentos para HTTP 429. Docker y la continuación manual se comprobaron con respuestas controladas. Esas pruebas no miden precisión del modelo.
+Verificación actual: 83 pruebas Python, incluidas 17 de transporte y contratos LLM (siete de Haiku y diez de Groq), cinco pruebas del frontend y build. Cubren salida estructurada, estados consistentes, citas únicas y Unicode, rechazo de etiquetas no permitidas, distinción entre reportes literales e inferencias, corrección acotada, errores y cuotas sin reintentos para HTTP 429. Docker y la continuación manual se comprobaron con respuestas controladas. Esas pruebas no miden precisión del modelo.
 
 En las comprobaciones reales con Groq se detectaron y corrigieron dependencias frágiles de los números de aparición, respuestas sin citas y confusión entre presencia dentro y atrapamiento. Con GPT-OSS 120B y razonamiento medio se comprobaron presencia ambigua, una respuesta descriptiva sobre heridos y negativas explícitas. La combinación con decisiones humanas y SQLite se verificó reutilizando una respuesta real, sin nuevas inferencias. Son comprobaciones de desarrollo, no evaluación independiente ni garantía de generalización. Ver [casos y resultados del Hito 3](docs/hito3-development-checks.md).
 
-El prompt actual es incident-v6: refuerza la extracción completa de la dirección vigente y evita mezclar componentes de direcciones corregidas. Una intersección se omitió en un caso anterior, aunque otra se extrajo correctamente. Tras los HTTP 429 se retomó con solo dos consultas y sin reintentos: una salida inválida fue rechazada y la siguiente extrajo correctamente calle, altura y transversal corregidas. Una consulta posterior comprobó el checklist: atrapados negativos, ubicación corregida y heridos/peligro ambiguos. La conservación manual se verificó con replay y SQLite temporal. Se completa la integración del Hito 3; una salida correcta no demuestra consistencia. La evaluación amplia continúa en el Hito 4 y la corrida de los 30 registros permanece reservada para el final.
+La línea base utilizó incident-v6: refuerza la extracción completa de la dirección vigente y evita mezclar componentes de direcciones corregidas. Una intersección se omitió en un caso anterior, aunque otra se extrajo correctamente. Tras los HTTP 429 se retomó con solo dos consultas y sin reintentos: una salida inválida fue rechazada y la siguiente extrajo correctamente calle, altura y transversal corregidas. Una consulta posterior comprobó el checklist: atrapados negativos, ubicación corregida y heridos/peligro ambiguos. La conservación manual se verificó con replay y SQLite temporal. Se completa la integración del Hito 3; una salida correcta no demuestra consistencia. La evaluación amplia continúa en el Hito 4 y la corrida de los 30 registros permanece reservada para el final.
 
 ## Analizar una transcripción
 

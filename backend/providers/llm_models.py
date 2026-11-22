@@ -2,6 +2,7 @@
 from typing import Literal, get_args
 
 from pydantic import Field, ValidationInfo, model_validator
+from pydantic_core import PydanticCustomError
 from backend.domain.models import Contract, Evidence, NonBlank, Category
 
 
@@ -17,9 +18,9 @@ class Quote(Contract):
     def resolve(self, transcript: str) -> Evidence:
         start = transcript.find(self.text)
         if start < 0:
-            raise ValueError("La cita literal no existe en la transcripción.")
+            raise PydanticCustomError("evidence_not_found", "La cita literal no existe en la transcripción.")
         if transcript.find(self.text, start + 1) >= 0:
-            raise ValueError("Cita repetida: incluir más contexto para identificar la evidencia.")
+            raise PydanticCustomError("evidence_not_unique", "Cita repetida: incluir más contexto para identificar la evidencia.")
         return Evidence(text=self.text, start=start, end=start + len(self.text))
 
 class UnknownField(Contract):
@@ -47,13 +48,13 @@ class InferredField(Contract):
 ExtractedField = UnknownField | ReportedField | InferredField
 
 class ExtractedLocation(Contract):
-    street: ExtractedField
+    street: ExtractedField = Field(description="Vía principal sustentada por el contexto de dirección; desconocida si el tipo del nombre no se puede determinar.")
     number: ExtractedField
     intersection: ExtractedField = Field(description=(
         "Vía transversal mencionada como cruce o proximidad a un cruce con la calle principal. "
         "No exige que el incidente esté exactamente en la esquina; no es la localidad."))
-    reference: ExtractedField
-    district: ExtractedField
+    reference: ExtractedField = Field(description="Referencia o nombre de ubicación sin tipo determinado. Preservar el nombre ambiguo sin asignarlo a calle o localidad.")
+    district: ExtractedField = Field(description="Localidad o municipio identificado como tal en el relato. Un topónimo aislado no confirma localidad.")
 
 
 

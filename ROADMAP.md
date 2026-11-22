@@ -100,18 +100,25 @@ Aceptación: el proveedor real y el mock cumplen el mismo contrato. Entradas amb
 
 Rama sugerida: `feat/evaluation`.
 
-Preparación local sobre el trabajo actual: scripts/evaluate.py ejecuta dos casos conocidos de desarrollo, compara campos y checklist, registra tiempos/configuración y detiene la corrida ante HTTP 429. Ver [uso y límites](README.md#evaluación-local-de-desarrollo). Se comprobó con Mock sin red: ambos casos completaron con diferencias, sin cambiar reglas. El Hito 3 completa su integración con comprobaciones puntuales; quedan pendientes las evaluaciones más amplias de este hito. Todavía no hay un conjunto reservado.
+Incremento actual: rama `feat/evaluation`. El evaluador mide extracción y checklist por separado, conserva resultados parciales y genera entradas para revisión humana. Hay ocho casos reservados con expectativas y hash versionados. Se completaron los ocho casos una vez cada uno: tres coincidencias completas de comprobaciones, dos diferencias de ubicación y tres errores de salida inválida. Doce solicitudes en total, sin reintentos y con pausas; revisión asistida realizada y revisión humana independiente pendiente. No se cambió el sistema a partir del resultado. Ver [tandas y acumulado](docs/evaluation-results.md). Las verificaciones con Mock continúan usando los dos casos conocidos. Ver [protocolo y límites](docs/evaluation.md). La corrida inicial está terminada. Queda la revisión humana de expectativas e interpretaciones, resolver o documentar las limitaciones detectadas y preparar la evaluación final.
 
 - [ ] Completar la revisión de etiquetas y protocolos antes de establecer resultados esperados; auditoría inicial en el Hito 1.
 - [ ] Tras el primer extractor, decidir qué casos sintéticos adicionales aportan cobertura y revisar sus expectativas antes de usarlos.
-- [ ] Definir y versionar la separación entre desarrollo y evaluación.
-- [ ] Añadir casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones.
+- [x] Definir y versionar la separación entre desarrollo y evaluación; conjunto reservado v1 fijado antes de la primera tanda.
+- [x] Añadir ocho casos propios reservados con negaciones, datos ausentes, direcciones nuevas, correcciones e intentos de alterar instrucciones; expectativas previas y hash versionado.
 - [x] Mantener expectativas fuera de las entradas del proveedor en el comando de evaluación; verificación de esa separación sin red.
-- [ ] Evaluar ubicación, categoría, prioridad, checklist y afirmaciones sin respaldo.
-- [ ] Reportar conteos, fallos, latencia y consumo cuando esté disponible.
-- [ ] Distinguir resultados reales de pruebas mock; documentar cobertura limitada y ausencia de P4 en el dataset original.
+- [x] Ejecutar la primera evaluación de ubicación, categoría y estados del checklist, contabilizar salidas inválidas y revisar las salidas como agente. Prioridad sin clasificación automática en modo LLM; sin validación P1–P4.
+- [ ] Completar revisión humana independiente de expectativas y soporte semántico; no sustituirla por coincidencia literal ni inspección del agente.
+- [x] Implementar conteos, fallos, latencia por etapa e intentos observados. Consumo no disponible en el contrato: se registra null. Mediciones reales y revisión pendientes.
+- [x] Distinguir resultados reales de pruebas mock; documentar muestra sintética pequeña, errores, revisión asistida y ausencia de P4 en el dataset original.
 
 Aceptación: un comando documentado reproduce la evaluación y genera resultados identificando casos, proveedor y configuración. No se afirma generalización por subcategoría a partir de una sola muestra.
+
+### Mejora de fiabilidad posterior
+
+Se implementaron diagnósticos seguros por intento, medición explícita de cero/un reintento y extracción sola, protección contra sobrescritura de reportes y política de referencia para ubicaciones sin tipo determinado (incident-v7).
+Los ocho casos observados se consideran desarrollo para ajustes posteriores. Se congelaron dos casos nuevos antes de consultarlos: uno completó seis comprobaciones y otro falló por formato incluso con el segundo intento. Ver [resultados completos e incidencia de ejecución](docs/llm-reliability-results.md).
+No se declara una mejora general de precisión o fiabilidad. La política de ubicación ambigua se verificó con transporte controlado, pero su caso real reservado no produjo datos válidos. La línea base y los 30 registros originales quedan intactos.
 
 ## Hito 5 — Entrega
 

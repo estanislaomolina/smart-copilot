@@ -199,11 +199,11 @@ def groq_response(output, finish="stop", **message_fields):
 
 
 class GroqTests(unittest.TestCase):
-    def gateway(self, handler, retries=0):
+    def gateway(self, handler, retries=0, on_attempt=None):
         client = httpx.Client(transport=httpx.MockTransport(handler))
         self.addCleanup(client.close)
         return GroqGateway(ProviderSettings(provider="groq", model=GROQ_MODEL,
-                                            api_key="local-groq-test-key", retries=retries), client)
+                                            api_key="local-groq-test-key", retries=retries), client, on_attempt)
 
     def test_strict_request_and_shared_conversion_keep_evidence_checks(self):
         requests = []
@@ -312,7 +312,7 @@ class GroqTests(unittest.TestCase):
                 EvaluatedChecklist.model_validate({"questions": [entry]})
 
     def test_remote_schema_rejection_has_one_bounded_correction(self):
-        calls = []
+        calls, trace = [], []
         def handler(request):
             calls.append(request)
             if len(calls) == 1:
@@ -320,10 +320,13 @@ class GroqTests(unittest.TestCase):
                                                           "failed_generation": "private-marker"}})
             return groq_response(incident())
         with patch("backend.providers.groq.time.sleep"):
-            result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1)).analyze(AnalysisRequest(transcript=TEXT)))
+            result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1, trace.append)).analyze(AnalysisRequest(transcript=TEXT)))
         self.assertEqual(result.provider, "real")
         self.assertEqual(len(calls), 2)
         self.assertNotIn("private-marker", calls[1].content.decode())
+        self.assertEqual([e["outcome"] for e in trace], ["remote_schema", "valid"])
+        self.assertEqual(trace[0]["issues"], [{"type": "json_invalid", "field": "response"}])
+        self.assertNotIn("private-marker", json.dumps(trace))
         calls = []
         def invalid(request):
             calls.append(request)
@@ -334,7 +337,7 @@ class GroqTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
 
     def test_literal_quote_validation_can_request_one_correction_without_fuzzy_matching(self):
-        calls = []
+        calls, trace = [], []
         def handler(request):
             calls.append(request)
             output = incident()
@@ -342,9 +345,13 @@ class GroqTests(unittest.TestCase):
                 output["category"]["quotes"][0]["text"] = "Cita no literal"
             return groq_response(output)
         with patch("backend.providers.groq.time.sleep"):
-            result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1)).analyze(AnalysisRequest(transcript=TEXT)))
+            result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1, trace.append)).analyze(AnalysisRequest(transcript=TEXT)))
         self.assertEqual(len(calls), 2)
         self.assertEqual(result.data.category.evidence[0].text, "Hay fuego")
+        self.assertEqual([e["outcome"] for e in trace], ["local_validation", "valid"])
+        self.assertTrue(any(i["type"] == "evidence_not_found" for i in trace[0]["issues"]))
+        self.assertNotIn("Cita no literal", json.dumps(trace))
+        self.assertNotIn(TEXT, json.dumps(trace))
         repaired_request = json.loads(calls[1].content)
         self.assertNotIn("Cita no literal", repaired_request["messages"][0]["content"])
         feedback = json.loads(repaired_request["messages"][2]["content"])
@@ -421,6 +428,44 @@ class GroqTests(unittest.TestCase):
             self.assertNotIn("local-groq-test-key", repr(settings))
         with patch.dict(os.environ, {"LLM_PROVIDER": "mock", "GROQ_API_KEY": "unused"}):
             self.assertEqual(ProviderSettings.from_env().provider, "mock")
+
+
+    def test_failed_correction_stays_rejected_and_truncation_is_not_retried(self):
+        bad = incident()
+        bad["category"]["quotes"][0]["text"] = "missing-private-text"
+        trace, calls = [], []
+        def invalid(request):
+            calls.append(request)
+            return groq_response(bad)
+        with patch("backend.providers.groq.time.sleep"), self.assertRaises(ProviderError):
+            asyncio.run(LLMExtractionProvider(self.gateway(invalid, 1, trace.append)).analyze(
+                AnalysisRequest(transcript=TEXT)))
+        self.assertEqual(len(calls), 2)
+        self.assertEqual([e["outcome"] for e in trace], ["local_validation", "local_validation"])
+        self.assertNotIn("missing-private-text", json.dumps(trace))
+        trace, calls = [], []
+        def truncated(request):
+            calls.append(request)
+            return groq_response(incident(), "length")
+        with self.assertRaises(ProviderError):
+            asyncio.run(LLMExtractionProvider(self.gateway(truncated, 1, trace.append)).analyze(
+                AnalysisRequest(transcript=TEXT)))
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(trace[0]["outcome"], "truncated")
+
+    def test_unknown_location_type_keeps_raw_name_as_reference(self):
+        text = TEXT + " Estoy en La Ribera, pero no sé si es calle o barrio."
+        output = incident()
+        output["location"]["reference"] = field("La Ribera", "La Ribera")
+        output["location"]["reference"]["rationale"] = "El tipo de ubicación sigue desconocido."
+        for key in ("street", "district"):
+            output["location"][key]["rationale"] = "No se determina el tipo de ubicación."
+        result = asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(output))).analyze(
+            AnalysisRequest(transcript=text)))
+        self.assertIsNone(result.data.location.street.value)
+        self.assertIsNone(result.data.location.district.value)
+        self.assertEqual(result.data.location.reference.value, "La Ribera")
+        self.assertEqual(result.data.location.reference.evidence[0].text, "La Ribera")
 
 
 if __name__ == "__main__":

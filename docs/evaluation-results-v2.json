@@ -1,0 +1,172 @@
+{
+  "report_version": 2,
+  "cases_sha256": "2ea8e804e6dd3443fc5d7a8e6d3f92e389e59bfdeba3e5d624f8f5b84466bc6d",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "prompt_version": "incident-v7",
+  "configuration": {
+    "reasoning_effort": "medium",
+    "timeout_seconds": 20.0,
+    "max_retries": 1
+  },
+  "evaluation_mode": "full",
+  "counts": {
+    "passed": 1,
+    "failed": 0,
+    "error": 1,
+    "skipped": 0
+  },
+  "summary": {
+    "literal_comparisons": {
+      "category": {
+        "compared": 1,
+        "matched": 1
+      },
+      "location": {
+        "compared": 3,
+        "matched": 3
+      },
+      "question_status": {
+        "compared": 2,
+        "matched": 2
+      }
+    },
+    "location_cases": {
+      "with_compared_fields": 1,
+      "all_compared_fields_matched": 1
+    },
+    "errors_by_code": {
+      "invalid_provider_output": 1
+    },
+    "attempt_diagnostics": {
+      "cases_observed": 2,
+      "attempts_recorded": 4,
+      "outcomes": {
+        "remote_schema": 2,
+        "valid": 2
+      },
+      "stages_recovered_after_retry": 0,
+      "first_attempt_validation_failures": 1
+    },
+    "terminal_invalid_outputs": 1,
+    "latency_seconds": {
+      "extraction": {
+        "samples": 2,
+        "min": 3.374543,
+        "median": 30.096579,
+        "max": 56.818615
+      },
+      "checklist": {
+        "samples": 1,
+        "min": 2.730408,
+        "median": 2.730408,
+        "max": 2.730408
+      },
+      "total": {
+        "samples": 2,
+        "min": 6.10503,
+        "median": 31.461837,
+        "max": 56.818645
+      }
+    },
+    "human_review": {
+      "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+      "total": 8,
+      "pending": 8,
+      "supported": 0,
+      "unsupported": 0,
+      "uncertain": 0
+    }
+  },
+  "source_reports": [
+    {
+      "name": "v7-holdout-v2-01.json",
+      "sha256": "5fb21cce523a269237b280e7485e76280dc91b8a12075c59641bd84053134269"
+    },
+    {
+      "name": "v7-holdout-v2-02.json",
+      "sha256": "c6f89572e9be5d7b0c18eedf0ce195f302b24d8919e8e7753f4978748b14c43a"
+    }
+  ],
+  "kind": "sanitized_new_holdout_summary",
+  "implementation_commit": "9796573",
+  "freeze_commit": "1127c51",
+  "baseline": "docs/evaluation-results-v1.json",
+  "not_comparable_as_accuracy_gain": "Conjuntos diferentes, muestra mínima y reintentos distintos respecto de la línea base.",
+  "cases": [
+    {
+      "id": "V2-01",
+      "status": "error",
+      "code": "invalid_provider_output",
+      "timings_seconds": {
+        "extraction": 56.818615,
+        "checklist": null,
+        "total": 56.818645
+      },
+      "request_attempts": {
+        "extraction": 2,
+        "checklist": null
+      },
+      "attempt_diagnostics": [
+        {
+          "schema": "ExtractedIncident",
+          "attempt": 1,
+          "outcome": "remote_schema",
+          "http_status": 400,
+          "seconds": 3.80943,
+          "issues": []
+        },
+        {
+          "schema": "ExtractedIncident",
+          "attempt": 2,
+          "outcome": "remote_schema",
+          "http_status": 400,
+          "seconds": 52.737312,
+          "issues": []
+        }
+      ],
+      "preventive_throttle_seconds": 49.716659,
+      "literal_checks": {
+        "matched": 0,
+        "compared": 0
+      }
+    },
+    {
+      "id": "V2-02",
+      "status": "passed",
+      "code": null,
+      "timings_seconds": {
+        "extraction": 3.374543,
+        "checklist": 2.730408,
+        "total": 6.10503
+      },
+      "request_attempts": {
+        "extraction": 1,
+        "checklist": 1
+      },
+      "attempt_diagnostics": [
+        {
+          "schema": "ExtractedIncident",
+          "attempt": 1,
+          "outcome": "valid",
+          "http_status": 200,
+          "seconds": 3.364712,
+          "issues": []
+        },
+        {
+          "schema": "EvaluatedChecklist",
+          "attempt": 1,
+          "outcome": "valid",
+          "http_status": 200,
+          "seconds": 2.72553,
+          "issues": []
+        }
+      ],
+      "preventive_throttle_seconds": 0.0,
+      "literal_checks": {
+        "matched": 6,
+        "compared": 6
+      }
+    }
+  ]
+}

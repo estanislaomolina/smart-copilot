@@ -1,7 +1,7 @@
 """Groq Chat Completions por HTTPX; JSON estricto y errores sin datos remotos."""
 import json
 import time
-from typing import TypeVar
+from typing import Callable, TypeVar
 
 import httpx
 from pydantic import BaseModel, ValidationError
@@ -32,9 +32,19 @@ def strict_schema(model: type[BaseModel]) -> dict:
     return adapt(model.model_json_schema())
 
 
+def validation_issues(error: ValidationError) -> list[dict]:
+    """Diagnóstico sin valores, citas, mensajes remotos ni nombres de campos extra."""
+    roots = {"location", "category", "subcategory", "risks", "summary", "questions"}
+    return [{"type": issue["type"],
+             "field": next((part for part in issue["loc"] if part in roots), "response")}
+            for issue in error.errors(include_input=False, include_context=False, include_url=False)]
+
+
 class GroqGateway:
-    def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None):
+    def __init__(self, settings: ProviderSettings, client: httpx.Client | None = None,
+                 on_attempt: Callable[[dict], None] | None = None):
         self.settings = settings
+        self.on_attempt = on_attempt
         self.client = client or httpx.Client(
             timeout=httpx.Timeout(settings.timeout, connect=min(5, settings.timeout)),
             follow_redirects=False,
@@ -54,6 +64,17 @@ class GroqGateway:
         if self.settings.model.startswith("openai/gpt-oss-"):
             body["reasoning_effort"] = self.settings.reasoning_effort
         for attempt in range(self.settings.retries + 1):
+            started = time.monotonic()
+            response = None
+            diagnostic = "invalid_envelope"
+            def record(outcome: str, issues: list[dict] | None = None):
+                if self.on_attempt:
+                    self.on_attempt({
+                        "schema": schema.__name__, "attempt": attempt + 1,
+                        "outcome": outcome, "http_status": response.status_code if response is not None else None,
+                        "seconds": round(time.monotonic() - started, 6),
+                        "issues": issues or [],
+                    })
             try:
                 response = self.client.post(
                     ENDPOINT, json=body,
@@ -68,16 +89,26 @@ class GroqGateway:
                     raise ValueError("Se requiere exactamente una respuesta.")
                 choice = choices[0]
                 message = choice.get("message")
+                if choice.get("finish_reason") == "length":
+                    diagnostic = "truncated"
+                elif isinstance(message, dict) and message.get("refusal"):
+                    diagnostic = "refused"
+                elif isinstance(message, dict) and message.get("tool_calls"):
+                    diagnostic = "unexpected_tools"
                 if (choice.get("finish_reason") != "stop" or not isinstance(message, dict)
                         or message.get("refusal") or message.get("tool_calls")
                         or not isinstance(message.get("content"), str)):
                     raise ValueError("Respuesta incompleta, rechazada o con herramientas.")
-                return schema.model_validate_json(message["content"], context=payload)
+                output = schema.model_validate_json(message["content"], context=payload)
+                record("valid")
+                return output
             except httpx.TimeoutException:
+                record("timeout")
                 code, transient = "provider_timeout", True
             except httpx.HTTPStatusError as error:
                 status = error.response.status_code
                 if status == 429:
+                    record("rate_limited")
                     # El cupo gratuito puede tardar en restablecerse. Evitar reintentos inmediatos.
                     raise ProviderError("provider_rate_limited", "Cupo de Groq alcanzado.", retryable=True) from None
                 try:
@@ -85,6 +116,16 @@ class GroqGateway:
                 except (ValueError, AttributeError):
                     remote_code = None
                 if status == 400 and remote_code == "json_validate_failed":
+                    # La generación rechazada se interpreta solo como JSON local para diagnosticar.
+                    # Nunca se publica, se almacena en el evento ni se introduce en el prompt.
+                    issues = [{"type": "remote_schema_unexplained", "field": "response"}]
+                    failed = error.response.json().get("error", {}).get("failed_generation")
+                    if isinstance(failed, str):
+                        try:
+                            schema.model_validate_json(failed, context=payload)
+                        except ValidationError as validation:
+                            issues = validation_issues(validation)
+                    record("remote_schema", issues)
                     if attempt == self.settings.retries:
                         raise ProviderError("invalid_provider_output", "Groq rechazó la generación por esquema inválido.") from None
                     # Una corrección acotada, sin copiar la generación fallida ni mensajes externos al prompt.
@@ -94,10 +135,13 @@ class GroqGateway:
                         "quotes=[]; un valor conocido necesita una cita. No cambies los hechos.")
                     time.sleep(.25)
                     continue
+                record("authentication" if status in (401, 403) else "http_error")
                 code, transient = "provider_unavailable", status in (408, 409) or status >= 500
             except httpx.RequestError:
+                record("connection_error")
                 code, transient = "provider_unavailable", True
             except ValidationError as error:
+                record("local_validation", validation_issues(error))
                 if attempt == self.settings.retries:
                     raise ProviderError("invalid_provider_output", "Salida de Groq inválida.") from error
                 # La cita debe existir antes de publicar el resultado; nunca se corrige por aproximación.
@@ -114,6 +158,7 @@ class GroqGateway:
                 time.sleep(.25)
                 continue
             except (ValueError, TypeError, AttributeError) as error:
+                record(diagnostic)
                 raise ProviderError("invalid_provider_output", "Salida de Groq inválida.") from error
             if not transient or attempt == self.settings.retries:
                 raise ProviderError(code, "No se pudo consultar Groq.", retryable=transient) from None
