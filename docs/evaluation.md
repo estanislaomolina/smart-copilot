@@ -114,3 +114,16 @@ holdout-v2 contiene dos casos nuevos congelados antes de ejecutar proveedores. V
 --extract-only limita la medición a extracción. --max-retries 1 mide el presupuesto del producto; la configuración y el modo quedan registrados y no se consolidan con corridas distintas.
 
 Los reportes existentes no se reemplazan por defecto: elegir una ruta nueva o --overwrite explícito. El rechazo ocurre antes de consultar al proveedor. Los casos de entrada y las fuentes de una consolidación nunca pueden ser el destino, incluso con esa opción.
+
+## Revisión de agente a pedido del propietario
+
+A pedido explícito del propietario del repositorio se revisaron las 38 entradas de los dos conjuntos reservados contra la conversación completa, las expectativas y las citas adjuntas, sin otro LLM ni consultas externas. Es una revisión de agente (`reviewer_type: coding_agent`, `independent_human_review: false`), no la revisión humana independiente que sigue pendiente.
+
+Resultado con el propio contador del evaluador: 34 respaldadas, 4 inciertas, 0 sin respaldo, 0 pendientes. Corresponden a las cuatro ya documentadas en [resultados](evaluation-results.md): `location.district` de EVAL-03 y EVAL-04 (nombre sin tipo explícito, con expectativa también ambigua), la justificación de heridos/peligro de EVAL-03 (dolor informado, no lesión confirmada) y la cita incompleta de la pregunta compuesta de EVAL-05. Las ocho entradas de V2-02 quedaron respaldadas; el resumen tiene citas parciales, aunque los detalles aparecen en el relato. No se modificaron expectativas, prompts ni resultados: los reportes originales siguen con `verdict=pending`.
+
+Las copias revisadas quedan fuera de Git, en `artifacts/evaluation/groq-holdout-agent-reviewed.json`, `artifacts/evaluation/v7-holdout-agent-reviewed.json` y `artifacts/evaluation/agent-review-all.json`. El conteo se reproduce sin proveedores con:
+
+~~~bash
+python3 scripts/evaluate.py --summarize-review artifacts/evaluation/groq-holdout-agent-reviewed.json
+python3 scripts/evaluate.py --summarize-review artifacts/evaluation/v7-holdout-agent-reviewed.json
+~~~
