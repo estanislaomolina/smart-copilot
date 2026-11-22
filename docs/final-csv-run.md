@@ -69,3 +69,8 @@ El estado durable queda en output/progress.json y el acumulado en output/summary
 Se verificó al inicio que el contenedor estaba en ejecución y procesaba el primer caso. No se declara finalizada ni se revisan resultados anticipadamente; se hará cuando el propietario avise.
 
 El contenedor de batch reutiliza la configuración del servicio api y hereda su healthcheck HTTP. Como ejecuta un script en vez del servidor web, Docker puede marcarlo unhealthy. El estado de esta tarea se consulta en progress.json, logs y código de salida del proceso; ese healthcheck no es el indicador del avance del batch. La aplicación principal sigue en su contenedor separado.
+
+## Reanudación y nueva configuración
+
+La reanudación 120B del 2026-11-22 03:12 UTC llegó al caso 5 y se detuvo nuevamente por cuota. quota-status.json registra TPD y retry-after=681; el resultado no se declara completo.
+Se prepara una nueva corrida separada con openai/gpt-oss-20b e incident-v8. El runner nuevo puede usar un mínimo de 30 segundos entre solicitudes y extender esa espera según los encabezados TPM; el manifiesto registra la reserva de 6000 tokens. Ver [cambio y verificación](category-schema-v8.md).

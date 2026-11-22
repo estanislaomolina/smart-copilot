@@ -7,6 +7,7 @@ import csv
 import hashlib
 import io
 import json
+import re
 import signal
 import sys
 import time
@@ -100,22 +101,40 @@ class RequestGate:
         self.last_started = None
         self.count = 0
         self.last_wait = 0.0
+        self.ready_after = 0.0
 
     def before_request(self, _request) -> None:
         if self.count >= self.budget:
             raise StopRequested("request_budget")
         start = self.clock()
-        remaining = max(0, self.interval - (start - self.last_started)) if self.last_started is not None else 0
+        interval_wait = self.interval - (start - self.last_started) if self.last_started is not None else 0
+        remaining = max(0, interval_wait, self.ready_after - start)
         while remaining > 0:
             if self.should_stop():
                 raise StopRequested("cancelled")
             self.sleep(min(1, remaining))
-            remaining = max(0, self.interval - (self.clock() - self.last_started))
+            current = self.clock()
+            remaining = max(0, self.interval - (current - self.last_started) if self.last_started is not None else 0,
+                            self.ready_after - current)
         if self.should_stop():
             raise StopRequested("cancelled")
         self.last_wait = self.clock() - start
         self.last_started = self.clock()
         self.count += 1
+
+
+    def after_response(self, response) -> None:
+        # Los encabezados describen TPM, no tokens diarios: no inventar disponibilidad TPD.
+        remaining = response.headers.get("x-ratelimit-remaining-tokens")
+        if remaining is None or not remaining.isdigit():
+            return
+        if int(remaining) >= 6000:
+            self.ready_after = 0.0
+            return
+        value = response.headers.get("x-ratelimit-reset-tokens", "")
+        parts = re.findall(r"([0-9.]+)(ms|s|m|h)", value)
+        wait = sum(float(n) * {"ms": .001, "s": 1, "m": 60, "h": 3600}[unit] for n, unit in parts) if parts else 60
+        self.ready_after = self.clock() + min(120, wait + 1)
 
 
 def load_previous(report: Path, marker: Path, case_id: str) -> dict | None:
@@ -162,6 +181,7 @@ def run(args) -> int:
                 "suite_sha256": hashlib.sha256(suite_raw).hexdigest(),
                 "max_retries": args.max_retries, "min_request_interval_seconds": args.interval,
                 "max_requests": 30 * 2 * (args.max_retries + 1), "code_revision": args.code_revision,
+                "minimum_token_reserve": 6000,
                 "code_sha256": {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in code_files.items()}}
     if manifest_path.exists():
         previous = json.loads(manifest_path.read_text())
@@ -186,7 +206,7 @@ def run(args) -> int:
         from backend.providers.groq import GroqGateway
         from backend.providers.llm import LLMExtractionProvider, LLMChecklistEvaluator
         client = httpx.Client(timeout=httpx.Timeout(settings.timeout, connect=min(5, settings.timeout)),
-                              follow_redirects=False, event_hooks={"request": [gate.before_request]})
+                              follow_redirects=False, event_hooks={"request": [gate.before_request], "response": [gate.after_response]})
         gateway = GroqGateway(settings, client, on_attempt=observe)
         provider, evaluator = LLMExtractionProvider(gateway), LLMChecklistEvaluator(gateway)
     else:

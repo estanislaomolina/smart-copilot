@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from types import SimpleNamespace
 
 from scripts.evaluate_csv import COLUMNS, RequestGate, StopRequested, csv_suite, load_previous
 
@@ -64,6 +65,14 @@ class FinalCsvTests(unittest.TestCase):
         with self.assertRaises(StopRequested):
             cancelled.before_request(None)
         self.assertEqual(cancelled.count, 0)
+        clock[0] = 0
+        paced = RequestGate(30, 3, clock=lambda: clock[0], sleep=sleep)
+        paced.before_request(None)
+        paced.after_response(SimpleNamespace(headers={
+            "x-ratelimit-remaining-tokens": "2000", "x-ratelimit-reset-tokens": "45s"}))
+        paced.before_request(None)
+        self.assertEqual(paced.last_wait, 46)
+        self.assertEqual(paced.count, 2)
 
 
 if __name__ == "__main__":

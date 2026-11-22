@@ -257,6 +257,18 @@ class GroqTests(unittest.TestCase):
                 asyncio.run(LLMExtractionProvider(self.gateway(
                     lambda request: groq_response(malformed))).analyze(AnalysisRequest(transcript=TEXT)))
 
+        inconsistent = [
+            {"value": "INCENDIO_RESCATE", "origin": "unknown", "quotes": [], "rationale": None},
+            {"value": None, "origin": "transcript", "quotes": [{"text": "Hay fuego"}], "rationale": None},
+            {"value": "INCENDIO_RESCATE", "origin": "inference", "quotes": [{"text": "Hay fuego"}], "rationale": None},
+        ]
+        for category in inconsistent:
+            output = incident()
+            output["category"] = category
+            with self.subTest(category_state=category["origin"]), self.assertRaises(ProviderError):
+                asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(output))).analyze(
+                    AnalysisRequest(transcript=TEXT)))
+
     def test_malformed_truncated_refused_and_tool_outputs_are_rejected(self):
         cases = [
             groq_response(incident(), "length"),

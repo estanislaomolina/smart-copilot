@@ -35,9 +35,16 @@ def strict_schema(model: type[BaseModel]) -> dict:
 def validation_issues(error: ValidationError) -> list[dict]:
     """Diagnóstico sin valores, citas, mensajes remotos ni nombres de campos extra."""
     roots = {"location", "category", "subcategory", "risks", "summary", "questions"}
-    return [{"type": issue["type"],
-             "field": next((part for part in issue["loc"] if part in roots), "response")}
-            for issue in error.errors(include_input=False, include_context=False, include_url=False)]
+    attributes = {"value", "origin", "quotes", "rationale", "text", "id", "status", "answer"}
+    issues = []
+    for issue in error.errors(include_input=False, include_context=False, include_url=False):
+        value = {"type": issue["type"],
+                 "field": next((part for part in issue["loc"] if part in roots), "response")}
+        attribute = next((part for part in reversed(issue["loc"]) if part in attributes), None)
+        if attribute:
+            value["attribute"] = attribute
+        issues.append(value)
+    return issues
 
 
 class GroqGateway:

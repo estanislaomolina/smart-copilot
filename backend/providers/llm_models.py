@@ -1,7 +1,7 @@
 """Salida reducida del modelo; los offsets y contratos públicos se construyen localmente."""
 from typing import Literal, get_args
 
-from pydantic import Field, ValidationInfo, model_validator
+from pydantic import Field, TypeAdapter, ValidationInfo, model_validator
 from pydantic_core import PydanticCustomError
 from backend.domain.models import Contract, Evidence, NonBlank, Category
 
@@ -77,9 +77,25 @@ class ReportedRisk(ReportedField):
         return self
 
 
+class ExtractedCategory(Contract):
+    """Una sola forma remota; las mismas invariantes de estado se verifican localmente."""
+    value: Category | None
+    origin: Literal["unknown", "transcript", "inference"]
+    quotes: list[Quote]
+    rationale: str | None
+
+    @model_validator(mode="after")
+    def validate_state(self, info: ValidationInfo):
+        # Evitar tres objetos anyOf casi idénticos en el decodificador remoto.
+        # Se conservan enum, nulabilidad y toda la validación previa de citas/procedencia.
+        TypeAdapter(UnknownField | ReportedCategory | InferredCategory).validate_python(
+            self.model_dump(), context=info.context)
+        return self
+
+
 class ExtractedIncident(Contract):
     location: ExtractedLocation
-    category: UnknownField | ReportedCategory | InferredCategory
+    category: ExtractedCategory
     subcategory: ExtractedField
     risks: list[ReportedRisk | InferredField]
     summary: ExtractedField

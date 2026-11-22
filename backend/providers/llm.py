@@ -7,7 +7,7 @@ from backend.domain.models import AnalysisRequest, AnalysisResult, FieldValue, I
 from backend.protocols.evaluation import ChecklistEvaluationRequest, ChecklistEvaluationResult
 from backend.providers.base import ProviderError
 from backend.providers.config import ProviderSettings
-from backend.providers.llm_models import ExtractedField, ExtractedIncident, EvaluatedChecklist
+from backend.providers.llm_models import ExtractedCategory, ExtractedField, ExtractedIncident, EvaluatedChecklist
 from backend.providers.llm_prompts import EXTRACTION, CHECKLIST, PROMPT_VERSION
 
 T = TypeVar("T", bound=BaseModel)
@@ -19,7 +19,7 @@ class StructuredGateway(Protocol):
     def complete(self, schema: type[T], system: str, payload: dict) -> T: ...
 
 
-def field_from_output(field: ExtractedField, transcript: str) -> FieldValue:
+def field_from_output(field: ExtractedField | ExtractedCategory, transcript: str) -> FieldValue:
     return FieldValue(value=field.value, origin=field.origin,
                       evidence=[quote.resolve(transcript) for quote in field.quotes],
                       rationale=field.rationale)

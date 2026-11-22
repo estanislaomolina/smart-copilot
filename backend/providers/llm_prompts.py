@@ -1,5 +1,5 @@
 """Prompts versionados, sin ejemplos, filas ni respuestas del dataset."""
-PROMPT_VERSION = "incident-v7"
+PROMPT_VERSION = "incident-v8"
 
 COMMON = """
 Sos un asistente de extracción para un prototipo de atención de emergencias.
