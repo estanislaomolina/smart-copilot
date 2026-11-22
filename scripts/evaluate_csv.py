@@ -173,8 +173,11 @@ def run(args) -> int:
     settings = ProviderSettings.from_env().model_copy(update={"retries": args.max_retries})
     suite_raw = suite.model_dump_json().encode()
     code_files = {"runner": Path(__file__), "evaluate": Path(__file__).with_name("evaluate.py")}
-    from backend.providers import groq, llm_models, llm_prompts
+    from backend.providers import groq, llm, llm_models, llm_prompts
     code_files.update(groq=Path(groq.__file__), models=Path(llm_models.__file__), prompts=Path(llm_prompts.__file__))
+    code_files["conversion_and_facts"] = Path(llm.__file__)
+    for name in ("demo", "general", "follow-ups"):
+        code_files["catalog_" + name] = ROOT / "data/protocols" / (name + ".json")
     manifest = {"provider": args.provider, "model": settings.model if args.provider == "groq" else None,
                 "prompt_version": PROMPT_VERSION if args.provider == "groq" else None,
                 "source_sha256": reference["source_sha256"],
@@ -208,7 +211,8 @@ def run(args) -> int:
         client = httpx.Client(timeout=httpx.Timeout(settings.timeout, connect=min(5, settings.timeout)),
                               follow_redirects=False, event_hooks={"request": [gate.before_request], "response": [gate.after_response]})
         gateway = GroqGateway(settings, client, on_attempt=observe)
-        provider, evaluator = LLMExtractionProvider(gateway), LLMChecklistEvaluator(gateway)
+        evaluator = LLMChecklistEvaluator(gateway)
+        provider = LLMExtractionProvider(gateway, evaluator)
     else:
         provider, evaluator = MockExtractionProvider(), MockChecklistEvaluator()
     engine = ProtocolEngine(ProtocolCatalog(), evaluator)

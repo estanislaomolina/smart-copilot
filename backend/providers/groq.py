@@ -107,7 +107,10 @@ class GroqGateway:
                         or not isinstance(message.get("content"), str)):
                     raise ValueError("Respuesta incompleta, rechazada o con herramientas.")
                 output = schema.model_validate_json(message["content"], context=payload)
-                record("valid")
+                discarded = getattr(output, "_discarded", [])
+                record("partial" if discarded else "valid", [
+                    {"type": "discarded_invalid_field", "field": path.split(".")[0].split("[")[0]}
+                    for path in discarded])
                 return output
             except httpx.TimeoutException:
                 record("timeout")

@@ -56,8 +56,8 @@ def create_app(frontend_dir: Path | None = None, db_path: Path | None = None) ->
     )
 
     catalog = ProtocolCatalog()
-    app.state.provider = LLMExtractionProvider(gateway) if gateway else MockExtractionProvider()
     evaluator = LLMChecklistEvaluator(gateway) if gateway else MockChecklistEvaluator()
+    app.state.provider = LLMExtractionProvider(gateway, evaluator) if gateway else MockExtractionProvider()
     engine = ProtocolEngine(catalog, evaluator)
     store = CallStore(db_path or Path(os.getenv("CALLS_DB_PATH", "data/private/calls.sqlite3")), catalog)
     app.include_router(call_routes(store))

@@ -34,7 +34,11 @@ class HaikuGateway:
                 )
                 if response.stop_reason != "end_turn" or response.parsed_output is None:
                     raise ProviderError("invalid_provider_output", "Salida incompleta o rechazada.")
-                return schema.model_validate(response.parsed_output.model_dump(), context=payload)
+                output = schema.model_validate(response.parsed_output.model_dump(), context=payload)
+                if hasattr(output, "_discarded"):
+                    output._discarded = list(dict.fromkeys([
+                        *response.parsed_output._discarded, *output._discarded]))
+                return output
             except anthropic.APITimeoutError:
                 code, transient = "provider_timeout", True
             except anthropic.APIConnectionError:

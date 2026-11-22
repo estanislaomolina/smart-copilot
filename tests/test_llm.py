@@ -84,7 +84,7 @@ class HaikuTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Quote(text="ausente").resolve(TEXT)
 
-    def test_invented_evidence_category_and_claimed_operator_are_rejected(self):
+    def test_invalid_fields_are_discarded_without_losing_valid_data(self):
         bad_quote = incident(); bad_quote["category"]["quotes"][0]["text"] = "Texto inexistente"
         bad_category = incident(); bad_category["category"]["value"] = "CATEGORIA_INVENTADA"
         bad_origin = incident(); bad_origin["category"]["origin"] = "operator"
@@ -92,9 +92,13 @@ class HaikuTests(unittest.TestCase):
         for output in (bad_quote, bad_category, bad_origin, bad_unknown):
             with self.subTest(output=output):
                 provider = LLMExtractionProvider(self.gateway(lambda request: response(output)))
-                with self.assertRaises(ProviderError) as raised:
-                    asyncio.run(provider.analyze(AnalysisRequest(transcript=TEXT)))
-                self.assertEqual(raised.exception.code, "invalid_provider_output")
+                result = asyncio.run(provider.analyze(AnalysisRequest(transcript=TEXT)))
+                self.assertIsNone(result.data.location.street.value)
+                if output is not bad_unknown:
+                    self.assertIsNone(result.data.category.value)
+                self.assertEqual(result.data.risks[0].value, "tres personas heridas")
+                self.assertTrue(any("Análisis parcial" in warning for warning in result.warnings))
+                result.data.validate_transcript(TEXT, allow_operator=False)
 
     def test_truncated_and_refused_outputs_never_become_results(self):
         for stop in ("max_tokens", "refusal"):
@@ -238,10 +242,11 @@ class GroqTests(unittest.TestCase):
                     check(value)
         check(strict_schema(ExtractedIncident))
         bad = incident(); bad["category"]["quotes"][0]["text"] = "Texto ausente"
-        with self.assertRaises(ProviderError) as raised:
-            asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(bad))).analyze(
-                AnalysisRequest(transcript=TEXT)))
-        self.assertEqual(raised.exception.code, "invalid_provider_output")
+        result = asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(bad))).analyze(
+            AnalysisRequest(transcript=TEXT)))
+        self.assertIsNone(result.data.category.value)
+        self.assertTrue(result.data.summary.value)
+        self.assertTrue(any("category" in warning for warning in result.warnings))
 
     def test_known_fields_require_quotes_in_remote_schema_and_local_validation(self):
         schema = strict_schema(ExtractedIncident)
@@ -253,9 +258,11 @@ class GroqTests(unittest.TestCase):
             if malformed[key]["value"] is None:
                 malformed[key] = field("Subtipo informado", "Hay fuego", "inference")
             malformed[key]["quotes"] = []
-            with self.subTest(field=key), self.assertRaises(ProviderError):
-                asyncio.run(LLMExtractionProvider(self.gateway(
+            with self.subTest(field=key):
+                result = asyncio.run(LLMExtractionProvider(self.gateway(
                     lambda request: groq_response(malformed))).analyze(AnalysisRequest(transcript=TEXT)))
+                self.assertIsNone(getattr(result.data, key).value)
+                self.assertTrue(any(key in warning for warning in result.warnings))
 
         inconsistent = [
             {"value": "INCENDIO_RESCATE", "origin": "unknown", "quotes": [], "rationale": None},
@@ -265,9 +272,10 @@ class GroqTests(unittest.TestCase):
         for category in inconsistent:
             output = incident()
             output["category"] = category
-            with self.subTest(category_state=category["origin"]), self.assertRaises(ProviderError):
-                asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(output))).analyze(
+            with self.subTest(category_state=category["origin"]):
+                result = asyncio.run(LLMExtractionProvider(self.gateway(lambda request: groq_response(output))).analyze(
                     AnalysisRequest(transcript=TEXT)))
+                self.assertIsNone(result.data.category.value)
 
     def test_malformed_truncated_refused_and_tool_outputs_are_rejected(self):
         cases = [
@@ -348,35 +356,29 @@ class GroqTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "invalid_provider_output")
         self.assertEqual(len(calls), 2)
 
-    def test_literal_quote_validation_can_request_one_correction_without_fuzzy_matching(self):
+    def test_bad_quote_is_discarded_without_fuzzy_matching_or_extra_request(self):
         calls, trace = [], []
         def handler(request):
             calls.append(request)
             output = incident()
-            if len(calls) == 1:
-                output["category"]["quotes"][0]["text"] = "Cita no literal"
+            output["category"]["quotes"][0]["text"] = "Cita no literal"
             return groq_response(output)
-        with patch("backend.providers.groq.time.sleep"):
-            result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1, trace.append)).analyze(AnalysisRequest(transcript=TEXT)))
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(result.data.category.evidence[0].text, "Hay fuego")
-        self.assertEqual([e["outcome"] for e in trace], ["local_validation", "valid"])
-        self.assertTrue(any(i["type"] == "evidence_not_found" for i in trace[0]["issues"]))
+        result = asyncio.run(LLMExtractionProvider(self.gateway(handler, 1, trace.append)).analyze(
+            AnalysisRequest(transcript=TEXT)))
+        self.assertEqual(len(calls), 1)
+        self.assertIsNone(result.data.category.value)
+        self.assertTrue(result.data.summary.value)
+        self.assertEqual([e["outcome"] for e in trace], ["partial"])
         self.assertNotIn("Cita no literal", json.dumps(trace))
         self.assertNotIn(TEXT, json.dumps(trace))
-        repaired_request = json.loads(calls[1].content)
-        self.assertNotIn("Cita no literal", repaired_request["messages"][0]["content"])
-        feedback = json.loads(repaired_request["messages"][2]["content"])
-        self.assertIn("Cita no literal", feedback["previous_output"])
-        self.assertTrue(feedback["validation_errors"])
-        self.assertNotIn("input", feedback["validation_errors"][0])
 
     def test_reported_risk_cannot_promote_an_interpretation_to_caller_fact(self):
         output = incident()
         output["risks"][0]["value"] = "Persona inconsciente"
-        with self.assertRaises(ProviderError):
-            asyncio.run(LLMExtractionProvider(self.gateway(
-                lambda request: groq_response(output))).analyze(AnalysisRequest(transcript=TEXT)))
+        partial = asyncio.run(LLMExtractionProvider(self.gateway(
+            lambda request: groq_response(output))).analyze(AnalysisRequest(transcript=TEXT)))
+        self.assertEqual(partial.data.risks, [])
+        self.assertTrue(any("risks[0]" in warning for warning in partial.warnings))
         output["risks"][0] = field("Posible afectación grave", "Hay tres personas heridas.", "inference")
         result = asyncio.run(LLMExtractionProvider(self.gateway(
             lambda request: groq_response(output))).analyze(AnalysisRequest(transcript=TEXT)))
@@ -390,8 +392,9 @@ class GroqTests(unittest.TestCase):
             calls.append(request)
             if limited:
                 return httpx.Response(429, json={"error": {"message": "private-marker"}})
-            payload = json.loads(json.loads(request.content)["messages"][1]["content"])
-            if "questions" not in payload:
+            body = json.loads(request.content)
+            payload = json.loads(body["messages"][1]["content"])
+            if body["response_format"]["json_schema"]["name"] == "ExtractedIncident":
                 return groq_response(incident())
             return groq_response({"questions": [
                 {"id": q["id"], "status": "answered" if index == 1 else "pending",
@@ -445,6 +448,8 @@ class GroqTests(unittest.TestCase):
     def test_failed_correction_stays_rejected_and_truncation_is_not_retried(self):
         bad = incident()
         bad["category"]["quotes"][0]["text"] = "missing-private-text"
+        bad["summary"]["quotes"][0]["text"] = "missing-private-summary"
+        bad["risks"][0]["quotes"][0]["text"] = "missing-private-risk"
         trace, calls = [], []
         def invalid(request):
             calls.append(request)
@@ -478,6 +483,100 @@ class GroqTests(unittest.TestCase):
         self.assertIsNone(result.data.location.district.value)
         self.assertEqual(result.data.location.reference.value, "La Ribera")
         self.assertEqual(result.data.location.reference.evidence[0].text, "La Ribera")
+
+    def test_combined_analysis_reuses_facts_and_invalidates_on_transcript_change(self):
+        calls = []
+        def handler(request):
+            body = json.loads(request.content)
+            payload = json.loads(body["messages"][1]["content"])
+            calls.append(payload)
+            entries = [
+                {"id": q["id"], "status": "ambiguous" if "atrapadas" in q["text"] else "pending",
+                 "answer": "Hay fuego" if "atrapadas" in q["text"] else None,
+                 "quotes": [{"text": "Hay fuego"}] if "atrapadas" in q["text"] else [],
+                 "rationale": "No se confirma atrapamiento." if "atrapadas" in q["text"] else None}
+                for q in payload["questions"]]
+            if body["response_format"]["json_schema"]["name"] == "ExtractedIncident":
+                return groq_response({**incident(), "questions": entries})
+            return groq_response({"questions": entries})
+        gateway = self.gateway(handler)
+        evaluator = LLMChecklistEvaluator(gateway)
+        provider = LLMExtractionProvider(gateway, evaluator)
+        catalog = ProtocolCatalog()
+        analyzed = asyncio.run(provider.analyze(AnalysisRequest(transcript=TEXT)))
+        manual = ProtocolQuestion(
+            id=catalog.general_for("INCENDIO_RESCATE").questions[0].id,
+            text=catalog.general_for("INCENDIO_RESCATE").questions[0].text,
+            status="answered", answer="No", origin="operator")
+        analyzed.data.questions = [manual]
+        engine = ProtocolEngine(catalog, evaluator)
+        request = ProtocolRequest(request=analyzed.request, data=analyzed.data)
+        result = engine.apply(request)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(result.questions[0].origin, "operator")
+        self.assertEqual(result.questions[0].answer, "No")
+        self.assertTrue(result.review_notices)
+        self.assertEqual(set(calls[0]), {"transcript", "questions"})
+        self.assertEqual(len(calls[0]["questions"]), 8)
+        # Repeated apply returns copies, so UI/manual edits cannot poison stored facts.
+        result.questions[1].answer = "Mutación de prueba"
+        repeated = engine.apply(request)
+        self.assertIsNone(repeated.questions[1].answer)
+        self.assertEqual(len(calls), 1)
+        engine.apply(ProtocolRequest(
+            request=AnalysisRequest(transcript=TEXT + " Llamante: Corrijo lo anterior."),
+            data=analyzed.data))
+        self.assertEqual(len(calls), 2)
+        # A different definition with the same ID must be evaluated again.
+        question = catalog.general_for("INCENDIO_RESCATE").questions[0].model_copy(
+            update={"text": "¿Pueden salir todas las personas?"})
+        evaluator.evaluate(ChecklistEvaluationRequest(transcript=TEXT, questions=[question]))
+        self.assertEqual(len(calls), 3)
+
+    def test_only_missing_questions_are_sent_and_bad_ids_do_not_populate_facts(self):
+        calls = []
+        catalog = ProtocolCatalog()
+        questions = catalog.general_for("INCENDIO_RESCATE").questions
+        def handler(request):
+            payload = json.loads(json.loads(request.content)["messages"][1]["content"])
+            calls.append(payload)
+            return groq_response({"questions": [
+                {"id": q["id"], "status": "pending", "answer": None, "quotes": [], "rationale": None}
+                for q in payload["questions"]]})
+        evaluator = LLMChecklistEvaluator(self.gateway(handler))
+        from backend.providers.llm_models import EvaluatedChecklist
+        def pending(key):
+            return EvaluatedChecklist.model_validate({"questions": [{
+                "id": key, "status": "pending", "answer": None, "quotes": [], "rationale": None}]}).questions[0]
+        evaluator.remember(TEXT, questions, [pending("invented")])
+        evaluator.remember(TEXT, questions, [pending(questions[0].id), pending(questions[0].id)])
+        evaluator.remember(TEXT, questions, [pending(questions[0].id)])
+        result = evaluator.evaluate(ChecklistEvaluationRequest(transcript=TEXT, questions=questions))
+        self.assertEqual([q["id"] for q in calls[0]["questions"]], [q.id for q in questions[1:]])
+        self.assertEqual([q.id for q in result.questions], [q.id for q in questions])
+        result.validate_against(ChecklistEvaluationRequest(transcript=TEXT, questions=questions))
+        for index in range(300):
+            evaluator.remember(f"Llamante: Relato {index}.", questions, [pending(questions[0].id)])
+        self.assertEqual(len(evaluator._facts), 256)
+
+    def test_partial_output_keeps_address_and_drops_only_bad_risk(self):
+        text = TEXT + " Estoy en Aurora 518."
+        output = incident()
+        output["location"]["street"] = field("Aurora", "Aurora 518")
+        output["location"]["number"] = field("518", "Aurora 518")
+        output["risks"].append(field("Diagnóstico inventado", "Texto ausente"))
+        result = asyncio.run(LLMExtractionProvider(self.gateway(
+            lambda request: groq_response(output))).analyze(AnalysisRequest(transcript=text)))
+        self.assertEqual(result.data.location.street.value, "Aurora")
+        self.assertEqual(result.data.location.number.value, "518")
+        self.assertEqual(len(result.data.risks), 1)
+        self.assertTrue(any("risks[1]" in warning for warning in result.warnings))
+        result.data.validate_transcript(text, allow_operator=False)
+        # Structural damage and unrecognized root properties remain hard failures.
+        for malformed in ({**output, "location": []}, {**output, "priority": "P1"}):
+            with self.assertRaises(ProviderError):
+                asyncio.run(LLMExtractionProvider(self.gateway(
+                    lambda request: groq_response(malformed))).analyze(AnalysisRequest(transcript=text)))
 
 
 if __name__ == "__main__":

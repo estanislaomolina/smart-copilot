@@ -542,6 +542,9 @@ function App() {
               <p className="muted risk-caption">La prioridad expresa gravedad sugerida; no confirma estos riesgos.</p>
               {inferredRisks.length ? inferredRisks.map((risk, index) => <FieldView key={index} field={risk} />)
                 : <p className="muted">Sin riesgos inferidos reconocidos. No descarta peligro.</p>}
+              {analysis?.warnings.some(warning => warning.startsWith('Análisis parcial:')) &&
+                <p className="notice" role="status">Análisis parcial: algunos datos no pudieron validarse.
+                  Revisá la información antes de continuar.</p>}
               <details className="source-details"><summary>Proveedor y limitaciones</summary>
                 <p className="muted">{manualMode ? 'Carga manual; sin nueva interpretación automática' : analysis?.provider + ' · ' + analysis?.model}. Desplegá los datos para inspeccionar su evidencia.</p>
                 {analysis?.warnings.map((warning, index) => <p className="muted" key={index}>{warning}</p>)}

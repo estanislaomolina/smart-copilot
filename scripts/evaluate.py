@@ -166,7 +166,7 @@ def summarize(results: list[dict]) -> dict:
             by_schema = {}
             for event in row["attempt_diagnostics"]:
                 by_schema.setdefault(event["schema"], []).append(event)
-            recovered += sum(len(group) > 1 and group[-1]["outcome"] == "valid"
+            recovered += sum(len(group) > 1 and group[-1]["outcome"] in ("valid", "partial")
                              for group in by_schema.values())
         diagnostics = {"cases_observed": len(observed), "attempts_recorded": len(events),
                        "outcomes": outcomes, "stages_recovered_after_retry": recovered,
@@ -228,6 +228,7 @@ async def evaluate(
             stopped = error.code == "provider_rate_limited"
         timings["total"] = round(time.monotonic() - start, 6)
         result.update(timings_seconds=timings, request_attempts=attempts,
+                      analysis_warnings=analysis.warnings if analysis else [],
                       attempt_diagnostics=(attempt_events[event_start:] if attempt_events is not None else None),
                       retries={key: max(0, value - 1) if value is not None else None
                                for key, value in attempts.items()},
@@ -357,7 +358,8 @@ def main() -> int:
                               follow_redirects=False, event_hooks={"request": [count_request]})
         gateway = GroqGateway(settings, client, on_attempt=attempt_events.append)
         model = settings.model
-        provider, evaluator = LLMExtractionProvider(gateway), LLMChecklistEvaluator(gateway)
+        evaluator = LLMChecklistEvaluator(gateway)
+        provider = LLMExtractionProvider(gateway, None if args.extract_only else evaluator)
     try:
         results = asyncio.run(evaluate(selected, provider, ProtocolEngine(ProtocolCatalog(), evaluator),
                                        request_count=lambda: request_attempts[0], attempt_events=attempt_events, extract_only=args.extract_only))
