@@ -1,5 +1,8 @@
 # Corrida final del CSV conocido
 
+**Lectura actual:** consultar el [resultado registrado](#resultado-registrado-de-la-corrida-20bincident-v8).
+Las secciones de lanzamiento y reanudación que siguen conservan el registro histórico.
+
 scripts/evaluate_csv.py procesa los 30 registros originales, sin modificarlos, en orden y con el proveedor seleccionado.
 Es una comprobación de desarrollo sobre datos ya inspeccionados; no evaluación independiente ni medición certificada de precisión.
 
@@ -88,3 +91,49 @@ Se inició una corrida nueva con openai/gpt-oss-20b, incident-v8 y código conge
 
 Se verificó el primer caso completo: extracción válida tras corregir una señal y checklist válido. Su estado de comparación tiene diferencias respecto del CSV y no se convierte en una afirmación de precisión. Se mantiene pendiente completar y revisar los 30.
 El acceso a 20B no elimina los límites gratuitos del proveedor. Un nuevo 429 se conserva y detiene la ejecución, sin bucles de solicitudes ni servicios pagos.
+
+## Resultado registrado de la corrida 20B/incident-v8
+
+Estado final observado: **detenida por cuota**, no completada.
+Se registraron 29 de los 30 casos; el caso 030 quedó sin intentar.
+
+- **21 casos** completaron extracción y checklist, con alguna diferencia literal respecto del CSV.
+- **7 casos** terminaron con `invalid_provider_output`: seis en extracción y uno en checklist.
+- **1 caso** terminó con `provider_rate_limited`, que detuvo la ejecución.
+- **0 casos** coincidieron en todas las comprobaciones literales. No significa que todos sus campos fueran incorrectos.
+- **69 solicitudes** en total, incluidos los reintentos. Once etapas terminaron válidas después de un reintento.
+
+Hay **22 extracciones utilizables**: las 21 que completaron el flujo más la del caso cuyo checklist falló.
+Sobre ellas, categoría coincidió literalmente en **16/22**, subtipo en **0/22** y los campos comparados de
+ubicación en **30/66** (calle, altura e intersección; 22 × 3).
+Solamente dos extracciones coincidieron en los tres componentes de ubicación a la vez.
+
+Son denominadores de salidas disponibles, no tasas globales sobre los 30 registros.
+Subtipo no es obligatorio en el producto y la referencia puede contener enriquecimientos;
+un valor ausente o una diferencia de escritura cuenta como diferencia literal. Eso exige revisar los casos,
+no cambiar el resultado automáticamente. Tampoco toda diferencia se puede atribuir al formato:
+puede existir un error real de extracción.
+
+Solo hubo **una comparación de estado de checklist** compatible con las preguntas del protocolo seleccionado,
+y no coincidió. Las guías generales no reproducen todas las preguntas específicas del CSV.
+Esta corrida no permite estimar precisión del checklist. Las **193 entradas de revisión humana** siguen
+pendientes; no se afirma una tasa de afirmaciones correctas ni de alucinaciones.
+Los tiempos incluyen pausas preventivas: no son latencia pura del modelo.
+
+### Dónde leer y comprobar los números
+
+El [resumen versionado](final-csv-results-v8.json) conserva configuración, conteos, métricas y el hash
+del reporte original, sin transcripciones ni credenciales.
+
+Los archivos locales originales están en
+`artifacts/final-evaluation/20261122-032242-290108-20b-v8/output/`:
+
+- `progress.json`: estado y conteos por caso.
+- `summary.json`: acumulado, métricas y resultados detallados.
+- `case-001.json` a `case-029.json`: comprobaciones y evidencia por registro.
+- En cada comparación, `expected` es la anotación de referencia, `actual` lo extraído y `passed`
+  indica igualdad literal; no es un veredicto semántico humano.
+
+Estos resultados corresponden a **94f45ae / incident-v8 / openai/gpt-oss-20b**.
+Los [cambios de cierre incident-v9](reliability-closure.md) se verificaron sin red y no tienen aún una nueva
+corrida semántica con Groq. Se conservan ambos estados por separado, sin presentar mejoras no medidas.

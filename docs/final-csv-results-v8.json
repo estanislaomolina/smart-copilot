@@ -1,0 +1,99 @@
+{
+  "provider": "groq",
+  "model": "openai/gpt-oss-20b",
+  "prompt_version": "incident-v8",
+  "source_sha256": "14dd1776639625672c2475033b1bc9ba6ea817001fae6214e404d43cf4887d34",
+  "suite_sha256": "d9fce4388d797992154389b3e6e9bd48ddf4481a7e11b877b7024e240498ef4c",
+  "code_revision": "94f45aed0eeaccc2c5c32125ea3a8fa664dcd1d5",
+  "max_retries": 1,
+  "progress": {
+    "state": "stopped_rate_limit",
+    "updated_at": "2026-11-22T04:03:23.145591+00:00",
+    "total": 30,
+    "completed": 29,
+    "current_case": null,
+    "counts": {
+      "passed": 0,
+      "failed": 21,
+      "error": 8
+    },
+    "requests_this_process": 69
+  },
+  "summary": {
+    "literal_comparisons": {
+      "category": {
+        "compared": 22,
+        "matched": 16
+      },
+      "subcategory": {
+        "compared": 22,
+        "matched": 0
+      },
+      "location": {
+        "compared": 66,
+        "matched": 30
+      },
+      "question_status": {
+        "compared": 1,
+        "matched": 0
+      }
+    },
+    "location_cases": {
+      "with_compared_fields": 22,
+      "all_compared_fields_matched": 2
+    },
+    "errors_by_code": {
+      "invalid_provider_output": 7,
+      "provider_rate_limited": 1
+    },
+    "attempt_diagnostics": {
+      "cases_observed": 29,
+      "attempts_recorded": 69,
+      "outcomes": {
+        "local_validation": 20,
+        "valid": 43,
+        "remote_schema": 5,
+        "rate_limited": 1
+      },
+      "stages_recovered_after_retry": 11,
+      "first_attempt_validation_failures": 18
+    },
+    "terminal_invalid_outputs": 7,
+    "latency_seconds": {
+      "extraction": {
+        "samples": 29,
+        "min": 30.089397,
+        "median": 39.34359,
+        "max": 86.610547
+      },
+      "checklist": {
+        "samples": 22,
+        "min": 29.260823,
+        "median": 39.592624,
+        "max": 78.325459
+      },
+      "total": {
+        "samples": 29,
+        "min": 32.817105,
+        "median": 73.915074,
+        "max": 126.297111
+      }
+    },
+    "human_review": {
+      "unit": "Entradas de revisión; pueden contener varias afirmaciones.",
+      "total": 193,
+      "pending": 193,
+      "supported": 0,
+      "unsupported": 0,
+      "uncertain": 0
+    }
+  },
+  "source_report_sha256": "cc50c12ac15277079f4bf7d8a03da91ac4373a2ffb5efa71f5640524e669cc34",
+  "limitations": [
+    "Corrida de desarrollo detenida por cuota: 29 casos registrados de 30.",
+    "Comparaciones literales contra anotaciones no validadas; no precisión semántica.",
+    "193 entradas de revisión humana siguen pendientes.",
+    "Tiempos incluyen esperas preventivas; no se presentan como latencia de inferencia.",
+    "Línea base incident-v8: no mide los cambios incident-v9."
+  ]
+}

@@ -46,7 +46,7 @@ Al añadir turnos se conserva categoría, prioridad y ubicación revisadas, incl
 
 La comprensión del mock sigue siendo conservadora: anexar una respuesta no garantiza que una paráfrasis se interprete correctamente. Un evaluador contextual separado reconoce diálogo explícito y un repertorio limitado sobre personas atrapadas; una señal de presencia dentro solo aporta evidencia ambigua, nunca confirma atrapamiento. En modo mock las otras preguntas conservan la interpretación limitada de diálogo explícito; no se añadieron reglas por registro para este incremento. El estado se guarda localmente en SQLite; la derivación es una simulación explícita. El mock puede omitir señales de gravedad y subestimar la prioridad; sus valores siempre requieren revisión humana.
 
-El caso del incendio con una persona dentro queda ambiguo con cita verificable. La guía propone una aclaración registrada en `data/protocols/follow-ups.json` (`demo-follow-ups-v1`), con procedencia propia y advertencia de demostración; no procede del CSV. El archivo original y el catálogo generado se mantienen intactos. El motor selecciona protocolos y combina revisiones manuales; `ChecklistEvaluator` recibe solamente conversación y preguntas del protocolo, y su salida se valida contra IDs, textos, aclaraciones autorizadas y offsets. `MockChecklistEvaluator` conserva su implementación limitada; `LLMChecklistEvaluator` ofrece interpretación semántica por API con Groq o Haiku cuando se configura explícitamente. La evaluación semántica amplia del proveedor real corresponde al Hito 4; las comprobaciones puntuales de integración no garantizan precisión.
+El caso del incendio con una persona dentro queda ambiguo con cita verificable. La guía propone una aclaración registrada en `data/protocols/follow-ups.json` (`demo-follow-ups-v1`), con procedencia propia y advertencia de demostración; no procede del CSV. El archivo original y el catálogo generado se mantienen intactos. El motor selecciona protocolos y combina revisiones manuales; la extracción real puede evaluar preguntas de las guías generales y `ChecklistEvaluator` recibe conversación y preguntas del protocolo, y su salida se valida contra IDs, textos, aclaraciones autorizadas y offsets. `MockChecklistEvaluator` conserva su implementación limitada; `LLMChecklistEvaluator` ofrece interpretación semántica por API con Groq o Haiku cuando se configura explícitamente. La evaluación semántica amplia del proveedor real corresponde al Hito 4; las comprobaciones puntuales de integración no garantizan precisión.
 
 Los tres elementos de incertidumbre —resumen central, próxima pregunta y checklist— se calculan desde la misma lista de preguntas publicada por el protocolo. La actualización de seguimiento guarda la referencia al ítem, no otra copia de su estado o respuesta. La respuesta y evidencia del backend se mantienen en ese ítem; el historial conserva el relato anterior. Los borradores de edición manual solo afectan la vista publicada al guardarse. La sincronización no amplía la comprensión semántica del mock: una respuesta no interpretable sigue ambigua para revisión.
 
@@ -59,6 +59,11 @@ Cada pregunta tiene un selector de estado y una acción **Revisar**. Marcarla re
 Para desarrollar el panel: Node 24 y `cd frontend && npm ci && npm run dev`, con la API en el puerto 8000 (`uvicorn backend.main:app --reload`). Vite usa un proxy local para `/api`. `cd frontend && npm run build` verifica TypeScript y genera el build; FastAPI sirve ese build en Docker, sin proceso Node durante la ejecución. React/React DOM implementan la interfaz; TypeScript valida tipos y Vite compila los assets. Las versiones resueltas están en el lockfile.
 
 ## Evaluación reproducible
+
+**Resultados y cierre técnico:** [explicación de los números reales del CSV](docs/final-csv-run.md#resultado-registrado-de-la-corrida-20bincident-v8),
+[resumen JSON versionado](docs/final-csv-results-v8.json) y [recuperación parcial, reutilización del checklist y robustez](docs/reliability-closure.md).
+La corrida real v8 quedó detenida por cuota tras registrar 29/30 casos. Los cambios v9 se verificaron offline;
+no se presenta una mejora de precisión con Groq sin una nueva medición.
 
 ~~~bash
 python3 scripts/evaluate.py --provider mock
@@ -76,7 +81,7 @@ Ver [protocolo de evaluación, comandos y revisión humana](docs/evaluation.md).
 
 La verificación preliminar de los 30 registros con Groq, en modo solo extracción, dejó 19 casos con comparaciones literales (ninguno coincidió en todas) y 11 salidas rechazadas por contrato. Coincidieron 13 de 19 categorías y 24 de 76 comparaciones de ubicación, sin reintentos y sin casos omitidos. Los primeros intentos sin pausas dieron un HTTP 429; la corrida consolidada usó pausas de 35 segundos. Son casos conocidos con etiquetas enriquecidas, por lo que no se reporta precisión. Ver [resultados y reproducción](docs/dataset-30-results.md).
 
-La corrida final de los 30 registros se ejecuta y se puede retomar con [evaluate_csv.py](scripts/evaluate_csv.py); ver [controles, referencias y archivos de avance](docs/final-csv-run.md). Se conserva el CSV original y no se ajustan reglas durante la ejecución.
+La corrida real final v8 quedó detenida por cuota con 29 registros; el corredor permite ejecutar y retomar con [evaluate_csv.py](scripts/evaluate_csv.py); ver [controles, referencias y archivos de avance](docs/final-csv-run.md). Se conserva el CSV original y no se ajustan reglas durante la ejecución.
 
 ## Carta de Llamada y persistencia
 
