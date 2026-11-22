@@ -84,23 +84,36 @@ class CallWorkflowTests(unittest.TestCase):
             def close(self):
                 pass
 
-        self.assertEqual(self.save().status_code, 200)
+        self.assertEqual(self.save().status_code, 200)  # Revisión 1: estado inicial para operar.
         with patch.dict(os.environ, {"LLM_PROVIDER": "groq", "GROQ_API_KEY": "clave-local-falsa"}), \
                 patch("backend.main.GroqGateway", return_value=FailingGateway()):
             with TestClient(create_app(db_path=self.db)) as client:
                 failed = client.post("/api/analyze", json={"transcript": "Llamante: Hay fuego en Av. Corrientes 1540."})
                 self.assertEqual(failed.status_code, 503)
                 self.assertEqual(failed.json()["code"], "provider_unavailable")
+                # Listado e historial también durante la caída, no solo antes.
+                self.assertEqual(client.get("/api/calls").status_code, 200)
+                self.assertEqual(client.get(self.url + "/revisions").status_code, 200)
+                # Guardado con la revisión vigente, antes de revisar y derivar.
+                edited = copy.deepcopy(self.snapshot)
+                edited["operator_notes"] = "Nota guardada durante la caída de Groq"
+                saved = client.put(self.url, json={"expected_revision": 1, "snapshot": edited})
+                self.assertEqual(saved.status_code, 200, saved.text)
+                self.assertEqual(saved.json()["card"]["revision"], 2)
                 reviewed = client.post(self.url + "/review", json={
-                    "expected_revision": 1, "acknowledged": True})
+                    "expected_revision": 2, "acknowledged": True})
                 self.assertEqual(reviewed.status_code, 200, reviewed.text)
                 referred = client.post(self.url + "/refer", json={
-                    "expected_revision": 2, "acknowledged": True})
+                    "expected_revision": 3, "acknowledged": True})
                 self.assertEqual(referred.status_code, 200, referred.text)
                 recovered = client.get(self.url).json()
                 self.assertEqual(recovered["card"]["data"]["priority"]["origin"], "operator")
                 self.assertEqual(recovered["card"]["status"], "referred")
+                self.assertEqual(recovered["card"]["operator_notes"], edited["operator_notes"])
                 self.assertTrue(recovered["referral"]["id"].startswith("SIM-CAD-"))
+                self.assertEqual([item["event"] for item in client.get(self.url + "/revisions").json()],
+                                 ["referred", "reviewed", "saved", "saved"])
+                self.assertEqual(client.get("/api/calls").json()[0]["id"], self.id)
 
     def test_review_and_referral_are_explicit_and_idempotent(self):
         self.assertEqual(self.save().status_code, 200)

@@ -132,7 +132,7 @@ Rama sugerida: `chore/release-preparation`.
 - [ ] Hacer público el repositorio y verificar acceso sin autenticación.
 - [ ] Crear un tag de entrega `v0.1.0` y comprobar enlaces.
 
-Revisión técnica final sin nuevas funcionalidades: una salida inválida no modifica datos confirmados por el operador; ante un fallo del proveedor se puede continuar manualmente sin consultar a Groq; y la Carta de Llamada se guarda, revisa, recupera y deriva con Groq configurado y caído. Esta última condición quedó fijada con una prueba de regresión en `tests/test_calls.py`. La demostración completa desde un arranque limpio de Docker se verificó en modo mock. No sustituye la revisión humana independiente ni mide precisión del modelo.
+Revisión técnica final sin nuevas funcionalidades: una salida inválida no modifica datos confirmados por el operador; ante un fallo del proveedor se puede continuar manualmente sin consultar a Groq; y la Carta de Llamada se guarda, revisa, recupera, lista, consulta en el historial y deriva con Groq configurado y caído. La prueba de regresión en `tests/test_calls.py` cubre esas operaciones dentro del bloque de caída; la demostración completa desde un arranque limpio de Docker en modo mock se verificó manualmente. No sustituye la revisión humana independiente ni mide precisión del modelo.
 
 Aceptación: el evaluador puede clonar el repo, ejecutar el único comando requerido y completar el flujo sin credenciales. El video y la documentación corresponden al commit entregado.
 

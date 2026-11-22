@@ -22,7 +22,7 @@ Decisiones de ingeniería del prototipo y sus consecuencias. No son políticas o
 - **Una salida inválida no publica datos.** El backend valida esquema y transcripción antes de responder; el frontend solo reemplaza el estado visible cuando extracción y protocolo terminan correctamente. Ante un fallo se conservan conversación, correcciones, protocolo y turnos sin incorporar.
 - **Las decisiones humanas prevalecen.** Los campos con origen `operator`, los vaciados explícitos y las respuestas revisadas se conservan al anexar turnos o recalcular la guía; si la sugerencia automática difiere, se muestra un aviso en lugar de sobrescribir.
 - **Continuación manual explícita.** Tras un fallo del proveedor, `manual_only` produce un checklist pendiente sin consultar al proveedor. Es una acción de la interfaz, no un cambio silencioso a mock.
-- **La Carta de Llamada es independiente del proveedor.** Guardado, revisión, recuperación, historial y derivación simulada usan solo SQLite y el catálogo. Se verificó con Groq configurado y caído: `/api/analyze` responde 503 y el resto del flujo responde 200.
+- **La Carta de Llamada es independiente del proveedor.** Guardado, revisión, recuperación, listado, historial y derivación simulada usan solo SQLite y el catálogo. Con Groq configurado y caído, `/api/analyze` responde 503 y esas operaciones responden 200; la prueba automatizada las cubre dentro del bloque de caída. El arranque limpio con Docker en modo mock se comprobó manualmente.
 
 ## Evaluación
 
