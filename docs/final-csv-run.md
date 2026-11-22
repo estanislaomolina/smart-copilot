@@ -67,3 +67,5 @@ docker logs -f smart-copilot-csv-final-20261122-021650-947341
 
 El estado durable queda en output/progress.json y el acumulado en output/summary.json, dentro de ese directorio. Al terminar o detenerse, el contenedor queda disponible para inspeccionar su código de salida.
 Se verificó al inicio que el contenedor estaba en ejecución y procesaba el primer caso. No se declara finalizada ni se revisan resultados anticipadamente; se hará cuando el propietario avise.
+
+El contenedor de batch reutiliza la configuración del servicio api y hereda su healthcheck HTTP. Como ejecuta un script en vez del servidor web, Docker puede marcarlo unhealthy. El estado de esta tarea se consulta en progress.json, logs y código de salida del proceso; ese healthcheck no es el indicador del avance del batch. La aplicación principal sigue en su contenedor separado.
