@@ -74,3 +74,17 @@ El contenedor de batch reutiliza la configuración del servicio api y hereda su 
 
 La reanudación 120B del 2026-11-22 03:12 UTC llegó al caso 5 y se detuvo nuevamente por cuota. quota-status.json registra TPD y retry-after=681; el resultado no se declara completo.
 Se prepara una nueva corrida separada con openai/gpt-oss-20b e incident-v8. El runner nuevo puede usar un mínimo de 30 segundos entre solicitudes y extender esa espera según los encabezados TPM; el manifiesto registra la reserva de 6000 tokens. Ver [cambio y verificación](category-schema-v8.md).
+
+## Nueva corrida con modelo disponible
+
+La corrida 120B/incident-v7 quedó detenida con cinco registros por TPD. Sus resultados permanecen en el directorio anterior.
+Se inició una corrida nueva con openai/gpt-oss-20b, incident-v8 y código congelado en 94f45ae:
+- Contenedor: smart-copilot-csv-20b-20261122-032242-290108.
+- Directorio local: artifacts/final-evaluation/20261122-032242-290108-20b-v8/.
+- Intervalo mínimo: 30 segundos, ampliado cuando los encabezados indiquen menos de 6000 tokens disponibles.
+- Un único reintento adicional por etapa. No se mezclan resultados con la corrida anterior.
+- El healthcheck HTTP del servicio api está desactivado en el worker; el estado real queda en progress.json.
+- La configuración local de la aplicación selecciona explícitamente el mismo modelo 20B.
+
+Se verificó el primer caso completo: extracción válida tras corregir una señal y checklist válido. Su estado de comparación tiene diferencias respecto del CSV y no se convierte en una afirmación de precisión. Se mantiene pendiente completar y revisar los 30.
+El acceso a 20B no elimina los límites gratuitos del proveedor. Un nuevo 429 se conserva y detiene la ejecución, sin bucles de solicitudes ni servicios pagos.

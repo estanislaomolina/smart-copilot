@@ -20,3 +20,5 @@ No se presenta una nueva corrida con modelo/esquema diferentes como continuació
 La corrida 120B/incident-v7 queda congelada e interrumpida. La siguiente corrida de los 30 es nueva y los casos siguen siendo desarrollo conocido.
 
 Verificación local: 87 pruebas Python pasan, incluidas las combinaciones inconsistentes de categoría y el ritmo adaptado a encabezados de cuota. La prueba con 20B valida una respuesta, no garantiza que las 30 llamadas estén libres de errores.
+
+La aplicación se reconstruyó y /api/config confirmó Groq/openai/gpt-oss-20b. En el primer caso de la nueva corrida se observó recuperación de una señal con validación local fallida; extracción y checklist terminaron válidos. No se afirma que todos los casos estén resueltos ni que se haya eliminado el riesgo semántico.
