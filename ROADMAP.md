@@ -125,7 +125,7 @@ No se declara una mejora general de precisión o fiabilidad. La política de ubi
 Rama sugerida: `chore/release-preparation`.
 
 - [x] Probar arranque limpio, modo mock y persistencia. Verificación aislada con Compose en otro proyecto y puerto, sin tocar el contenedor ni el volumen existentes: panel, health, análisis, protocolo, guardado, revisión, derivación, recuperación, listado e historial respondieron correctamente.
-- [x] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente. Resultado: 19 casos con comparaciones (ninguno pasó todas), 11 salidas inválidas y 0 omitidos. Ver [resultados](docs/dataset-30-results.md).
+- [ ] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente. La verificación preliminar de solo extracción dejó 19 casos con diferencias, 11 salidas inválidas y 0 omitidos; ver [resultados](docs/dataset-30-results.md). La corrida final con el corredor versionado está en ejecución; ver [protocolo](docs/final-csv-run.md).
 - [x] Completar README y memoria de decisiones con resultados y limitaciones reales. Ver [decisiones](docs/decisions.md).
 - [x] Revisar secretos y contenido de archivos, historial e imagen. Sin claves reales en archivos versionados; `.env`, PDF y SQLite nunca entraron al historial; la imagen no incluye credenciales, base de ejecución ni el PDF.
 - [ ] Grabar video de 1–3 minutos: arranque, transcripción, asistencia, corrección y derivación.

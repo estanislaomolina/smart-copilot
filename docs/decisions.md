@@ -29,7 +29,7 @@ Decisiones de ingeniería del prototipo y sus consecuencias. No son políticas o
 - **Separación desarrollo/evaluación con hash versionado.** Los ocho casos de la línea base pasaron a desarrollo tras el cambio a incident-v7; dos casos nuevos se congelaron antes de consultar proveedores. Las expectativas nunca se envían al modelo.
 - **Reportes sin secretos ni transcripciones completas.** Se guardan fuera de Git; los resúmenes versionados conservan conteos, tiempos, hashes y fallos. El consumo no está en el contrato y se registra como `null`.
 - **Coincidencia literal ≠ soporte semántico.** Las entradas de revisión empiezan en `pending`. La inspección de 38 entradas realizada a pedido del propietario es de agente (`independent_human_review: false`): 34 respaldadas, 4 inciertas, 0 sin respaldo. La revisión humana independiente sigue pendiente.
-- **Muestra pequeña y fallos visibles.** Tres errores de salida inválida y dos diferencias de ubicación en la línea base, más un caso nuevo que falla con corrección. No se afirma precisión general, tasa de alucinaciones ni validez operativa. La corrida de los 30 registros del CSV queda como verificación sobre casos conocidos de desarrollo.
+- **Muestra pequeña y fallos visibles.** Tres errores de salida inválida y dos diferencias de ubicación en la línea base, más un caso nuevo que falla con corrección. No se afirma precisión general, tasa de alucinaciones ni validez operativa. La verificación preliminar de solo extracción sobre los 30 registros del CSV dejó 19 casos con diferencias, 11 salidas inválidas y ninguna omisión; ver [resultados](dataset-30-results.md). La corrida final con el corredor versionado se ejecuta aparte, sin reutilizar esos números como resultado definitivo.
 
 ## Fuera del alcance
 
@@ -37,4 +37,4 @@ Audio, telefonía, despacho automático e integración real con CAD, geocodifica
 
 ## Cierre
 
-La revisión final no añadió funcionalidades: se concentró en las tres condiciones de robustez del proveedor y en el arranque limpio con Docker en modo mock. Siguen pendientes la corrida de los 30 registros con Groq, el video, la publicación del repositorio y el tag; la revisión humana independiente tampoco se sustituye por la inspección de agente. El prototipo se presenta con esas limitaciones explícitas, no como un sistema validado para emergencias reales.
+La revisión final no añadió funcionalidades: se concentró en las tres condiciones de robustez del proveedor y en el arranque limpio con Docker en modo mock. La verificación preliminar de los 30 registros con Groq quedó documentada; la corrida final del corredor versionado está en ejecución. Siguen pendientes el cierre de esa corrida, el video, la publicación del repositorio y el tag; la revisión humana independiente tampoco se sustituye por la inspección de agente. El prototipo se presenta con esas limitaciones explícitas, no como un sistema validado para emergencias reales.
