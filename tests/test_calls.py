@@ -10,6 +10,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from backend.main import create_app
+from backend.providers.base import ProviderError
 
 
 class CallWorkflowTests(unittest.TestCase):
@@ -72,6 +73,34 @@ class CallWorkflowTests(unittest.TestCase):
         self.assertEqual(item["card"]["data"], self.snapshot["data"])
         self.assertEqual(item["context"], self.snapshot["context"])
         self.assertEqual(self.client.get(self.url + "/revisions").json()[0]["event"], "saved")
+
+    def test_call_workflow_does_not_depend_on_groq_availability(self):
+        class FailingGateway:
+            settings = None
+
+            def complete(self, *_args, **_kwargs):
+                raise ProviderError("provider_unavailable", "Proveedor caído")
+
+            def close(self):
+                pass
+
+        self.assertEqual(self.save().status_code, 200)
+        with patch.dict(os.environ, {"LLM_PROVIDER": "groq", "GROQ_API_KEY": "clave-local-falsa"}), \
+                patch("backend.main.GroqGateway", return_value=FailingGateway()):
+            with TestClient(create_app(db_path=self.db)) as client:
+                failed = client.post("/api/analyze", json={"transcript": "Llamante: Hay fuego en Av. Corrientes 1540."})
+                self.assertEqual(failed.status_code, 503)
+                self.assertEqual(failed.json()["code"], "provider_unavailable")
+                reviewed = client.post(self.url + "/review", json={
+                    "expected_revision": 1, "acknowledged": True})
+                self.assertEqual(reviewed.status_code, 200, reviewed.text)
+                referred = client.post(self.url + "/refer", json={
+                    "expected_revision": 2, "acknowledged": True})
+                self.assertEqual(referred.status_code, 200, referred.text)
+                recovered = client.get(self.url).json()
+                self.assertEqual(recovered["card"]["data"]["priority"]["origin"], "operator")
+                self.assertEqual(recovered["card"]["status"], "referred")
+                self.assertTrue(recovered["referral"]["id"].startswith("SIM-CAD-"))
 
     def test_review_and_referral_are_explicit_and_idempotent(self):
         self.assertEqual(self.save().status_code, 200)
