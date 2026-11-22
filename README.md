@@ -12,7 +12,7 @@ El operador carga una transcripción, revisa ubicación, tipología y prioridad 
 
 ## Roadmap y forma de trabajo
 
-Ver [ROADMAP.md](ROADMAP.md) para hitos, criterios de aceptación y flujo de ramas y pull requests.
+Ver [ROADMAP.md](ROADMAP.md) para hitos, criterios de aceptación y flujo de ramas y pull requests, y la [memoria de decisiones](docs/decisions.md) para las decisiones de ingeniería y sus limitaciones.
 
 ## Ejecutar el panel y la API
 
@@ -140,7 +140,9 @@ El timeout de transporte es de 20 segundos por intento (configurable entre 1 y 3
 
 Ante un fallo se conservan conversación, correcciones y turnos sin incorporar. **Continuar con carga manual** es una acción explícita: conserva los datos disponibles, permite editar campos, aplicar guías y registrar respuestas sin consultar la IA. Las preguntas automáticas pasan a pendientes; las respuestas humanas compatibles se mantienen. El modo manual se guarda en SQLite y también permite anexar turnos, revisar y derivar. No hay cambio silencioso a Mock ni nuevos hechos automáticos. Para volver a un recorrido automático se inicia otra llamada.
 
-Verificación actual: 83 pruebas Python, incluidas 17 de transporte y contratos LLM (siete de Haiku y diez de Groq), cinco pruebas del frontend y build. Cubren salida estructurada, estados consistentes, citas únicas y Unicode, rechazo de etiquetas no permitidas, distinción entre reportes literales e inferencias, corrección acotada, errores y cuotas sin reintentos para HTTP 429. Docker y la continuación manual se comprobaron con respuestas controladas. Esas pruebas no miden precisión del modelo.
+Verificación actual: 84 pruebas Python, incluidas 17 de transporte y contratos LLM (siete de Haiku y diez de Groq), cinco pruebas del frontend y build. Cubren salida estructurada, estados consistentes, citas únicas y Unicode, rechazo de etiquetas no permitidas, distinción entre reportes literales e inferencias, corrección acotada, errores y cuotas sin reintentos para HTTP 429. Docker y la continuación manual se comprobaron con respuestas controladas. Esas pruebas no miden precisión del modelo.
+
+Revisión final de robustez del proveedor, sin nuevas funcionalidades: (1) una salida inválida no publica datos ni reemplaza valores confirmados por el operador; (2) ante un fallo del proveedor la interfaz ofrece **Continuar con carga manual**, que consulta el catálogo local sin volver a llamar a Groq; (3) la Carta de Llamada se guarda, revisa, recupera, lista y deriva sin depender de Groq. La prueba automatizada `test_call_workflow_does_not_depend_on_groq_availability` cubre, **dentro del bloque donde Groq falla**, el 503 de `/api/analyze` y el 200 de guardado (con la revisión vigente), revisión, derivación, recuperación, listado e historial. La comprobación con un SQLite temporal y el arranque limpio de Docker Compose en modo mock, sin credenciales ni volúmenes previos, se hicieron por separado de forma manual: panel, health, análisis, protocolo, carta, revisión, derivación y recuperación funcionaron. Estas comprobaciones demuestran disponibilidad del flujo local, no fiabilidad semántica del modelo.
 
 En las comprobaciones reales con Groq se detectaron y corrigieron dependencias frágiles de los números de aparición, respuestas sin citas y confusión entre presencia dentro y atrapamiento. Con GPT-OSS 120B y razonamiento medio se comprobaron presencia ambigua, una respuesta descriptiva sobre heridos y negativas explícitas. La combinación con decisiones humanas y SQLite se verificó reutilizando una respuesta real, sin nuevas inferencias. Son comprobaciones de desarrollo, no evaluación independiente ni garantía de generalización. Ver [casos y resultados del Hito 3](docs/hito3-development-checks.md).
 

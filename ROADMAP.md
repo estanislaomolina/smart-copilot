@@ -124,13 +124,15 @@ No se declara una mejora general de precisión o fiabilidad. La política de ubi
 
 Rama sugerida: `chore/release-preparation`.
 
-- [ ] Probar arranque limpio, modo mock y persistencia.
+- [x] Probar arranque limpio, modo mock y persistencia. Verificación aislada con Compose en otro proyecto y puerto, sin tocar el contenedor ni el volumen existentes: panel, health, análisis, protocolo, guardado, revisión, derivación, recuperación, listado e historial respondieron correctamente.
 - [ ] Al completar todo el flujo, ejecutar una corrida reproducible con los 30 registros del CSV y registrar resultados y fallos sin ajustar reglas para forzar coincidencias; son casos conocidos de desarrollo, no evaluación independiente.
-- [ ] Completar README y memoria de decisiones con resultados y limitaciones reales.
-- [ ] Revisar secretos y contenido de archivos, historial e imagen.
+- [x] Completar README y memoria de decisiones con resultados y limitaciones reales. Ver [decisiones](docs/decisions.md).
+- [x] Revisar secretos y contenido de archivos, historial e imagen. Sin claves reales en archivos versionados; `.env`, PDF y SQLite nunca entraron al historial; la imagen no incluye credenciales, base de ejecución ni el PDF.
 - [ ] Grabar video de 1–3 minutos: arranque, transcripción, asistencia, corrección y derivación.
 - [ ] Hacer público el repositorio y verificar acceso sin autenticación.
 - [ ] Crear un tag de entrega `v0.1.0` y comprobar enlaces.
+
+Revisión técnica final sin nuevas funcionalidades: una salida inválida no modifica datos confirmados por el operador; ante un fallo del proveedor se puede continuar manualmente sin consultar a Groq; y la Carta de Llamada se guarda, revisa, recupera, lista, consulta en el historial y deriva con Groq configurado y caído. La prueba de regresión en `tests/test_calls.py` cubre esas operaciones dentro del bloque de caída; la demostración completa desde un arranque limpio de Docker en modo mock se verificó manualmente. No sustituye la revisión humana independiente ni mide precisión del modelo.
 
 Aceptación: el evaluador puede clonar el repo, ejecutar el único comando requerido y completar el flujo sin credenciales. El video y la documentación corresponden al commit entregado.
 
